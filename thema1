@@ -1,0 +1,15 @@
+#!/bin/bash
+# Thema 1
+
+for file     #on input parameters(file list)
+do
+if [ ! -f $file ]
+then
+echo "ONLY Files are allowed as Program parameters"
+else
+#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
+#awk -F ":" '{print $1}' input1 
+cat $file
+fi
+done
+
