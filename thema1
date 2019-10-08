@@ -15,12 +15,22 @@ X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from "
 Y=($(echo $(awk -F ":" '{print $2}' $file)))
 length=${#X[@]}   			     #length of each file
 #########################---- C A L C U L A T I O N S ----################################
+sum_x=0
+sum_y=0
+sum_xy=0
+sum_x2=0
 for (( i = 0 ; i <= $length - 1; i++))
 do
-res=$(echo  "scale=2; ${X[i]}+${Y[i]}" | bc)
-echo $res
+
+sum_x=$(echo "scale=2; ${X[i]}+$sum_x" | bc)
+sum_y=$(echo "scale=2; ${Y[i]}+$sum_y" | bc)
+sum_xy=$(echo "scale=2; (${X[i]}*${Y[i]}) + $sum_xy" | bc)
+sum_x2=$(echo "scale=2; (${X[i]}*${X[i]}) + $sum_x2" | bc)
+
+
 done
 ########################################################################################
+echo  "FILE:$file,a= b= c= err="
 fi
 done
 
