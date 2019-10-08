@@ -13,13 +13,14 @@ else
 unset X Y				     #clearing variable(could cause problems)
 X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
 Y=($(echo $(awk -F ":" '{print $2}' $file)))
-length=${#X[@]}   			     #length of each file
+len=${#X[@]}   			             #length of each file
 #########################---- C A L C U L A T I O N S ----################################
 sum_x=0
 sum_y=0
 sum_xy=0
 sum_x2=0
-for (( i = 0 ; i <= $length - 1; i++))
+err=0
+for (( i = 0 ; i <= $len - 1; i++))
 do
 
 sum_x=$(echo "scale=2; ${X[i]}+$sum_x" | bc)
@@ -27,10 +28,20 @@ sum_y=$(echo "scale=2; ${Y[i]}+$sum_y" | bc)
 sum_xy=$(echo "scale=2; (${X[i]}*${Y[i]}) + $sum_xy" | bc)
 sum_x2=$(echo "scale=2; (${X[i]}*${X[i]}) + $sum_x2" | bc)
 
+done
+###calc a,b after all sums are known
+
+a=$(echo "scale=2; (($len*$sum_xy)-($sum_x*$sum_y)) / (($len*$sum_x2)-($sum_x*$sum_x))" | bc)
+b=$(echo "scale=2; ($sum_y-($a*$sum_x)) / $len" | bc)
+
+for (( i = 0 ; i <= $len - 1; i++))	#final error calculation
+do
+
+err=$(echo "scale=2; (${Y[i]} - ($a*${X[i]} + $b))*(${Y[i]} - ($a*${X[i]} + $b)) + $err" | bc)
 
 done
-########################################################################################
-echo  "FILE:$file,a= b= c= err="
+##########################################################################################
+echo  "FILE: $file, a=$a b=$b c=1 err=$err"
 fi
 done
 
