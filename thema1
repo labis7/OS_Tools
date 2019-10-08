@@ -8,8 +8,17 @@ then
 echo "ONLY Files are allowed as Program parameters"
 else
 #head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
-#awk -F ":" '{print $1}' input1 
-cat $file
+#awk -F ":" '{print $1}' input1
+#NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
+unset X Y
+X=($(echo $(awk -F ":" '{print $1}' $file)))
+Y=($(echo $(awk -F ":" '{print $2}' $file)))
+length=${#X[@]}
+for (( i = 0 ; i <= $length - 1; i++))
+do
+echo ${X[i]} 
+done
+echo $length
 fi
 done
 
