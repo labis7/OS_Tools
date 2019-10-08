@@ -10,15 +10,17 @@ else
 #head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
 #awk -F ":" '{print $1}' input1
 #NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
-unset X Y
-X=($(echo $(awk -F ":" '{print $1}' $file)))
+unset X Y				     #clearing variable(could cause problems)
+X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
 Y=($(echo $(awk -F ":" '{print $2}' $file)))
-length=${#X[@]}
+length=${#X[@]}   			     #length of each file
+#########################---- C A L C U L A T I O N S ----################################
 for (( i = 0 ; i <= $length - 1; i++))
 do
-echo ${X[i]} 
+res=$(echo  "scale=2; ${X[i]}+${Y[i]}" | bc)
+echo $res
 done
-echo $length
+########################################################################################
 fi
 done
 
