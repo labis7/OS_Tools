@@ -1,0 +1,1 @@
+barcelona-osfp -F - {print $1}

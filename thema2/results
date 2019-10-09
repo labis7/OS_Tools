@@ -1,3 +1,47 @@
 #!/bin/bash
 #thema 2
 
+for file     		#in parameter list(file list)
+do
+if [ ! -f $file ]
+then
+echo "ONLY Files are allowed as Program parameters"
+else
+#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
+#awk -F ":" '{print $1}' input1
+#NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
+#unset X Y				     #clearing variable(could cause problems)
+X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
+Y=($(echo $(awk -F ":" '{print $2}' $file)))
+len=${#X[@]}   			             #length of each file
+
+for (( i = 0; i <= len - 1 ; i++ )) #calculating goals and points per team
+do
+
+team1=$(awk -F "-" '{print $1}' <<< "${X[i]}")  # Here-string trick
+team2=$(awk -F "-" '{print $2}' <<< "${X[i]}")
+score1=$(awk -F "-" '{print $1}' <<< "${Y[i]}")
+score2=$(awk -F "-" '{print $2}' <<< "${Y[i]}")
+if [ $score1 -eq $score2 ]
+then
+points1=1
+points2=1
+elif [ $score1 -gt $score2 ]
+then
+points1=3
+points2=0
+else
+points1=0
+points2=3
+fi
+#echo -e : in order to enable special char like \t
+
+echo -e "$team1\t$points1\t$score1 $score2"
+echo -e "$team2\t$points2\t$score2 $score1"
+
+
+done #calculating goals and points per team
+fi
+done
+
+
