@@ -15,6 +15,9 @@ X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from "
 Y=($(echo $(awk -F ":" '{print $2}' $file)))
 len=${#X[@]}   			             #length of each file
 
+touch temp1
+rm temp1
+touch temp1
 for (( i = 0; i <= len - 1 ; i++ )) #calculating goals and points per team
 do
 
@@ -36,10 +39,11 @@ points2=3
 fi
 #echo -e : in order to enable special char like \t
 
-echo -e "$team1\t$points1\t$score1 $score2"
-echo -e "$team2\t$points2\t$score2 $score1"
 
+echo -e "$team1\t$points1\t$score1 $score2" >> temp1
+echo -e "$team2\t$points2\t$score2 $score1" >> temp1
 
+#echo $(awk '{print $1}' temp1)   ready each column..with a for for each line and do the maths for each team
 done #calculating goals and points per team
 fi
 done
