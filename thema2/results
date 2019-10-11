@@ -7,8 +7,7 @@ if [ ! -f $file ]
 then
 echo "ONLY Files are allowed as Program parameters"
 else
-#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
-#awk -F ":" '{print $1}' input1
+#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))#awk -F ":" '{print $1}' input1
 #NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
 #unset X Y				     #clearing variable(could cause problems)
 X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
@@ -19,7 +18,7 @@ touch temp1
 rm temp1
 touch temp1
 for (( i = 0; i <= len - 1 ; i++ )) #calculating goals and points per team
-do
+X=($(echo $(awk -F ":" '{print $1}' $file)))do
 
 team1=$(awk -F "-" '{print $1}' <<< "${X[i]}")  # Here-string trick
 team2=$(awk -F "-" '{print $2}' <<< "${X[i]}")
@@ -40,11 +39,33 @@ fi
 #echo -e : in order to enable special char like \t
 
 
-echo -e "$team1\t$points1\t$score1 $score2" >> temp1
-echo -e "$team2\t$points2\t$score2 $score1" >> temp1
+echo -e "$team1\t$points1\t$score1\t$score2" >> temp1
+echo -e "$team2\t$points2\t$score2\t$score1" >> temp1
 
-#echo $(awk '{print $1}' temp1)   ready each column..with a for for each line and do the maths for each team
+#echo $(awk '{print $1}' temp1)  
+#X=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1))))    Unique team list 
+
 done #calculating goals and points per team
+
+teams_uniq=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1))))
+
+temp1_col1=($(echo $(awk '{print $1}' temp1)))
+temp1_col2
+temp1_col3
+temp1_col4
+ 
+len_i=${#team_uniq[@]}
+len_j=${#temp1[@]}
+for (( i = 0; i <= len_i; i++ ))
+do
+for (( j = 0; j <= len_j; j++ ))
+do
+
+if [ "${teams_uniq[i]}" -eq "$" ]
+
+done # end for loop of temp1
+done #end forloop of uniq teams
+
 fi
 done
 
