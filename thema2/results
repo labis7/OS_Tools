@@ -1,13 +1,13 @@
 #!/bin/bash
 #thema 2
-
 for file     		#in parameter list(file list)
 do
 if [ ! -f $file ]
 then
 echo "ONLY Files are allowed as Program parameters"
 else
-#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))#awk -F ":" '{print $1}' input1
+#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
+#awk -F ":" '{print $1}' input1
 #NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
 #unset X Y				     #clearing variable(could cause problems)
 X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
@@ -18,7 +18,7 @@ touch temp1
 rm temp1
 touch temp1
 for (( i = 0; i <= len - 1 ; i++ )) #calculating goals and points per team
-X=($(echo $(awk -F ":" '{print $1}' $file)))do
+do
 
 team1=$(awk -F "-" '{print $1}' <<< "${X[i]}")  # Here-string trick
 team2=$(awk -F "-" '{print $2}' <<< "${X[i]}")
@@ -39,34 +39,53 @@ fi
 #echo -e : in order to enable special char like \t
 
 
-echo -e "$team1\t$points1\t$score1\t$score2" >> temp1
-echo -e "$team2\t$points2\t$score2\t$score1" >> temp1
+echo -e "$team1\t$points1\t$score1 $score2" >> temp1
+echo -e "$team2\t$points2\t$score2 $score1" >> temp1
 
-#echo $(awk '{print $1}' temp1)  
-#X=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1))))    Unique team list 
-
+#echo $(awk '{print $1}' temp1)   ready each column..with a for for each line and do the maths for each team
 done #calculating goals and points per team
 
 teams_uniq=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1))))
 
 temp1_col1=($(echo $(awk '{print $1}' temp1)))
-temp1_col2
-temp1_col3
-temp1_col4
+temp1_col2=($(echo $(awk '{print $2}' temp1)))
+temp1_col3=($(echo $(awk '{print $3}' temp1)))
+temp1_col4=($(echo $(awk '{print $4}' temp1)))
  
-len_i=${#team_uniq[@]}
-len_j=${#temp1[@]}
+len_i=${#teams_uniq[@]}
+len_j=${#temp1_col1[@]}
+
+touch temp2
+rm temp2
+touch temp2
+
+
 for (( i = 0; i <= len_i; i++ ))
 do
+
+points=0
+goals_ach=0
+goals_rec=0
+
+
 for (( j = 0; j <= len_j; j++ ))
 do
 
-if [ "${teams_uniq[i]}" -eq "$" ]
+if [ "${teams_uniq[i]}" == "${temp1_col1[j]}" ]
+then
+
+points=`expr $points + ${temp1_col2[j]}`
+goals_ach=`expr $goals_ach + ${temp1_col3[j]}` 
+goals_rec=`expr $goals_rec + ${temp1_col4[j]}`
+
+fi
 
 done # end for loop of temp1
+ 
+#echo -e "${teams_uniq[i]}\t$points\t$goals_ach\t$goals_rec" >> temp2
+
+
 done #end forloop of uniq teams
 
 fi
 done
-
-
