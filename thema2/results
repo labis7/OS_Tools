@@ -58,9 +58,10 @@ len_j=${#temp1_col1[@]}
 touch temp2
 rm temp2
 touch temp2
+ 
 
 
-for (( i = 0; i <= len_i; i++ ))
+for (( i = 0; i < len_i; i++ ))
 do
 
 points=0
@@ -68,22 +69,22 @@ goals_ach=0
 goals_rec=0
 
 
-for (( j = 0; j <= len_j; j++ ))
+for (( j = 0; j < len_j; j++ ))
 do
+ 
 
 if [ "${teams_uniq[i]}" == "${temp1_col1[j]}" ]
 then
-
-points=`expr $points + ${temp1_col2[j]}`
+points=`expr $points + ${temp1_col2[j]}`  
 goals_ach=`expr $goals_ach + ${temp1_col3[j]}` 
 goals_rec=`expr $goals_rec + ${temp1_col4[j]}`
-
+ 
 fi
 
 done # end for loop of temp1
  
-#echo -e "${teams_uniq[i]}\t$points\t$goals_ach\t$goals_rec" >> temp2
-
+ 
+echo -e "${teams_uniq[i]}\t$points\t$goals_ach\t$goals_rec" >> temp2
 
 done #end forloop of uniq teams
 
