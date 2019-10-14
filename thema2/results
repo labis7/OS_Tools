@@ -2,28 +2,29 @@
 #thema 2
 for file     		#in parameter list(file list)
 do
-if [ ! -f $file ]
-then
-echo "ONLY Files are allowed as Program parameters"
+if [ ! -f $file ]     #Checking if the input is a file type
+then 
+echo "Your input(s) are not a file type"
 else
-#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
-#awk -F ":" '{print $1}' input1
-#NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
-#unset X Y				     #clearing variable(could cause problems)
-X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
-Y=($(echo $(awk -F ":" '{print $2}' $file)))
-len=${#X[@]}   			             #length of each file
 
-touch temp1
+X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
+Y=($(echo $(awk -F ":" '{print $2}' $file))) #choose the group thats right from ":"
+len=${#X[@]}   			             #length of the file
+
+touch temp1  #Safe creation of a temporary file
 rm temp1 
 touch temp1
-for (( i = 0; i <= len - 1 ; i++ )) #calculating goals and points per team
+
+for (( i = 0; i <= len - 1 ; i++ ))            #calculating goals and points per team
 do
 
+#Now we can split further our data with the delimiter "-"    
 team1=$(awk -F "-" '{print $1}' <<< "${X[i]}")  # Here-string trick
 team2=$(awk -F "-" '{print $2}' <<< "${X[i]}")
 score1=$(awk -F "-" '{print $1}' <<< "${Y[i]}")
 score2=$(awk -F "-" '{print $2}' <<< "${Y[i]}")
+
+#Points calculation per game
 if [ $score1 -eq $score2 ]
 then
 points1=1
@@ -38,21 +39,24 @@ points2=3
 fi
 
 #echo -e : in order to enable special char like \t
-echo -e "$team1\t$points1\t$score1 $score2" >> temp1
+#Append every game -->New format : 'Team' 'gained points from a specific gane' 'goals achievied' 'goals received'
+echo -e "$team1\t$points1\t$score1 $score2" >> temp1 
 echo -e "$team2\t$points2\t$score2 $score1" >> temp1
 
 
 done #calculating goals and points per team
 
-teams_uniq=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1))))
+teams_uniq=($(echo $(awk '{print $1}' <<< $(sort -u -k1,1 temp1)))) #Unique list of teams, we used Sort bcs we used the -u that means unique
 
-temp1_col1=($(echo $(awk '{print $1}' temp1)))
+
+#Saving each column of the temp1 so we can make a search with our unique teams 
+temp1_col1=($(echo $(awk '{print $1}' temp1))) 
 temp1_col2=($(echo $(awk '{print $2}' temp1)))
 temp1_col3=($(echo $(awk '{print $3}' temp1)))
 temp1_col4=($(echo $(awk '{print $4}' temp1)))
 
-len_i=${#teams_uniq[@]}
-len_j=${#temp1_col1[@]}
+len_i=${#teams_uniq[@]}  #Number of all the teams(unique)
+len_j=${#temp1_col1[@]}  #Number of each column in temp1
 
 touch temp2
 rm temp2
@@ -60,7 +64,7 @@ touch temp2
 
 
 
-for (( i = 0; i < len_i; i++ ))
+for (( i = 0; i < len_i; i++ )) #For each unique team
 do
 
 points=0
@@ -68,10 +72,10 @@ goals_ach=0
 goals_rec=0
 
 
-for (( j = 0; j < len_j; j++ ))
+for (( j = 0; j < len_j; j++ ))#for each line in temp1,find the team
 do
 
-
+#Finding the team and making the calculations by the saved columns 
 if [ "${teams_uniq[i]}" == "${temp1_col1[j]}" ]
 then
 points=`expr $points + ${temp1_col2[j]}`
@@ -82,22 +86,26 @@ fi
 
 done # end for loop of temp1
 
-echo -e "${teams_uniq[i]}\t$points\t$goals_ach-$goals_rec" >> temp2
+#Saving the final arithmetic results for each team
+echo -e "${teams_uniq[i]}\t$points\t$goals_ach-$goals_rec" >> temp2   
 
 done #end forloop of uniq teams
 
 touch temp3
+#Sorting: First based on column 2 as numerical elements and reversed(from Higher to lower) and then if we have same points there will be a sorting according to Naming of the teams.
+sort -k 2,2nr -k 1,1  temp2 > temp3  #Saving to temporary3 file 
 
-sort -k 2,2nr -k 1,1  temp2 > temp3 
+
+#Last step is to add the format Num. Team_name    Points    Goals_achieved-Goals_Received
 i=1
-while IFS= read -r line
+while IFS= read -r line   #Reading each line from temp3 file
 do
 
-echo -e "$i.\t$line"
+echo -e "$i.\t$line" #Adding the Number.
 i=`expr $i + 1`
 done < temp3
 
-rm temp1 temp2 temp3
+rm temp1 temp2 temp3  #Removing unnecessary files
 
 fi
 done
