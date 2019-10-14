@@ -3,16 +3,14 @@
 
 for file     #on input parameters(file list)
 do
-if [ ! -f $file ]
+if [ ! -f $file ]   #Checking if the input is a file type
 then
-echo "ONLY Files are allowed as Program parameters"
+echo "Your inputs are not a file type"
 else
-#head -n 5 $file,,,var=($(echo $(head -n 4 input1)))
-#awk -F ":" '{print $1}' input1
-#NEW :  vr=($(echo $(awk -F ":" '{print $1}' $file)))
+    
 unset X Y				     #clearing variable(could cause problems)
 X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
-Y=($(echo $(awk -F ":" '{print $2}' $file)))
+Y=($(echo $(awk -F ":" '{print $2}' $file))) #choose the group thats right from ":"
 len=${#X[@]}   			             #length of each file
 #########################---- C A L C U L A T I O N S ----################################
 sum_x=0
@@ -44,4 +42,3 @@ done
 echo  "FILE: $file, a=$a b=$b c=1 err=$err"
 fi
 done
-
