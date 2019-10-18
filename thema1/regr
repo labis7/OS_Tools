@@ -7,7 +7,8 @@ if [ ! -f $file ]   #Checking if the input is a file type
 then
 echo "Your inputs are not a file type"
 else
-    
+
+myfile=$(basename $file)   		     #In order to take only the name of the file and not the full path attached to it
 unset X Y				     #clearing variable(could cause problems)
 X=($(echo $(awk -F ":" '{print $1}' $file))) #choose the group thats left from ":"
 Y=($(echo $(awk -F ":" '{print $2}' $file))) #choose the group thats right from ":"
@@ -29,6 +30,10 @@ sum_x2=$(echo "scale=2; (${X[i]}*${X[i]}) + $sum_x2" | bc)
 done
 ###calc a,b after all sums are known
 
+if [ $len -eq 0 ]
+then
+echo "ERROR $myfile. Can't divide with zero."
+else   
 a=$(echo "scale=2; (($len*$sum_xy)-($sum_x*$sum_y)) / (($len*$sum_x2)-($sum_x*$sum_x))" | bc)
 b=$(echo "scale=2; ($sum_y-($a*$sum_x)) / $len" | bc)
 
@@ -39,6 +44,8 @@ err=$(echo "scale=2; (${Y[i]} - ($a*${X[i]} + $b))*(${Y[i]} - ($a*${X[i]} + $b))
 
 done
 ##########################################################################################
-echo  "FILE: $file, a=$a b=$b c=1 err=$err"
+echo  "FILE: $myfile, a=$a b=$b c=1 err=$err"
+fi  #Zero division check
+
 fi
 done
