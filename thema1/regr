@@ -30,16 +30,20 @@ sum_x2=$(echo "scale=2; (${X[i]}*${X[i]}) + $sum_x2" | bc)
 done
 ###calc a,b after all sums are known
 #Firstly,we check the denominator
+c=1
+
 if (( $(echo "scale=2; ($len*$sum_x2) == ($sum_x*$sum_x)" | bc) ))
 then
-    len=0
-fi
-if [ $len -eq 0 ]
-then
-echo "ERROR $myfile. Can't divide with zero."
-else   
+    #When X is static,we mean a vertical line,--> c=0, -> X=-b/a ,with a random a
+    c=0
+    b=-${X[0]}
+    a=1      ##lets say 1,it could be anything
+else
+c=1
 a=$(echo "scale=2; (($len*$sum_xy)-($sum_x*$sum_y)) / (($len*$sum_x2)-($sum_x*$sum_x))" | bc)
 b=$(echo "scale=2; ($sum_y-($a*$sum_x)) / $len" | bc)
+fi
+
 
 for (( i = 0 ; i <= $len - 1; i++))	#final error calculation
 do
@@ -48,8 +52,8 @@ err=$(echo "scale=2; (${Y[i]} - ($a*${X[i]} + $b))*(${Y[i]} - ($a*${X[i]} + $b))
 
 done
 ##########################################################################################
-echo  "FILE: $myfile, a=$a b=$b c=1 err=$err"
-fi  #Zero division check
+echo  "FILE: $myfile, a=$a b=$b c=$c err=$err"
+
 
 fi
 done
