@@ -19,7 +19,7 @@ def split_and_tuple(file):
             receipt=[]      #New temp_list(for our new receipt)
             continue        ## No other words in the line
         for word in line.split(): ##Splitting each Line into words
-            if((type(word) == int)||(type(word) == float)):  #We do this in order to control products better,see below
+            if((type(word) == int)or(type(word) == float)):  #We do this in order to control products better,see below
                 receipt.append(word)                #Numbers only
             else:
                 receipt.append(word[:len(word)-1])  # .SPLIT won't split 'Product:' ,we dont need ':'
