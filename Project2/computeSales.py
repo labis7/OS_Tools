@@ -34,15 +34,15 @@ def split_and_tuple(file, final_list, mydix):
                 #Check Dictionary,add the restaurant(afm) and products so they map to the final_list index ,
                 # if exists you will get the number from dix in order to recreate the tuple
                 try:
-                    index = mydix[receipt_t[0]]
-                    temp_list = list(final_list[index])
-                    for i in range(1, len(receipt_t)):
+                    index = mydix[receipt_t[0]]        #get index in the main list of the afm
+                    temp_list = list(final_list[index])#make a list so we can append more elements
+                    for i in range(1, len(receipt_t)): #
                         temp_list.append(receipt_t[i])
-                    final_list[index] = tuple(temp_list)
-                    add_to_dictionary(receipt_t, mydix, index)
+                    final_list[index] = tuple(temp_list)      # Shape the entry of the main list
+                    add_to_dictionary(receipt_t, mydix, index)#update dictionary
                 except:
                     add_to_dictionary(receipt_t, mydix, len(final_list))
-                    final_list.append(receipt_t)  ##Added to the final list of tuples
+                    final_list.append(receipt_t)             ##Added to the final list of tuples
 
             receipt=[]      #New temp_list(for    our new receipt)
             continue        ## No other words in the line
@@ -58,20 +58,43 @@ def search_product(prod, mydix, mylist):
     try:
         index_list = mydix[(prod).casefold()]  # we get all the indexes where prod. appears in our list
     except:
-        return
-    for i in index_list:
+        return             # No result
+    for i in index_list:    # for each position in list
         sum = 0
-        tupl = mylist[i]
+        tupl = mylist[i]    #save the specific tuple entry(one of the index_list)
         #afm=tupl[0]
-        for j in range(1, len(tupl), 4):
+        for j in range(1, len(tupl), 4):  #for each entry in tuples
             if(tupl[j].casefold() == prod.casefold()): ##Compare each PRODUCT entrie in tuples
                 sum = sum + float(tupl[j+3])   # Sum of the product price per AFM
-        final_list.append((tupl[0], sum))
-    final_list.sort(key=lambda tup: tup[0])
-    for i in final_list:
+        final_list.append((tupl[0], sum))       #Build the requested list
+    final_list.sort(key=lambda tup: tup[0])     #Sorting according to the 1st element of the tuples in the list
+    for i in final_list:   #### Printing
         print(i[0], i[1])
 ##########################################################################################################
 
+##################################   3   #################################################################
+def search_afm(afm, mydix, mylist):
+    final_list = []
+    try:
+        index = mydix[afm]
+    except:
+        return
+    tupl = mylist[index] #All the data we got for For the specific afm
+    for i in range(1, len(tupl), 4):        #for each product in tuple
+        sum = 0 #for each product
+        prod = tupl[i]
+        for j in range(i, len(tupl), 4):      #find if there are more than 1 products like that and make a sum
+            if(prod in tupl[:i]):             #check if you have already calc before this product(so its already calculated because of the 1st appear of this prod.)
+                break
+            if (tupl[i].casefold() == tupl[j].casefold()):
+                sum = sum + float(tupl[j+3])
+        if(not(sum == 0)):  ## when sum == 0 --> we are talking about an element that is already counted,and we skip it
+            final_list.append((prod, sum))      ##add the tuple to the requested list
+    final_list.sort(key=lambda tup: tup[0])
+    for i in final_list:   #### Printing
+        print(i[0], i[1])
+
+##########################################################################################################
 my_input=-1
 mydix={}
 mylist=[]
@@ -91,10 +114,11 @@ while(my_input != 4):
         # format of each touple:
         # (afm_num,prod_name1,quantity1,price_per_prod1,sum_of_prod1,prod_nameN,quantityN,price_per_prodN,sum_of_prodN,SUM)
     elif(my_input == 2):  ## Statistics according to a product
-        prod = input("Insert product name")
+        prod = input("Insert product name:")
         search_product(prod+":", mydix, mylist)
     elif(my_input == 3): ## Statistics according to AFM
-        continue
+        afm = input("Insert AFM:")
+        search_afm(afm, mydix, mylist)
     elif(my_input == 4):
         exit(0)
 
