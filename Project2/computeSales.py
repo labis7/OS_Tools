@@ -1,11 +1,16 @@
+##################################   1   #################################################################
 #Python interpreter doesn't allocate mem for all the variables
 # --> if two or more variable has the same value it just map to that value
 #So we can use the average complexity O(1) of the dictionary to search fast products and afm
 def add_to_dictionary(rec_t, mydix, counter):
-    mydix[rec_t[0]] = counter
-    for i in range(1, len(rec_t)-1, 4):
+    try:
+        mydix[rec_t[0]]  #If exists,do nothing
+    except:
+        mydix[rec_t[0]] = counter
+    for i in range(1, len(rec_t), 4):
         try:
-            mydix[rec_t[i]].append(counter)
+            if(not(counter in mydix[rec_t[i]])):  ##It can be already added(2nd order of a prod in the same receipt)
+                mydix[rec_t[i]].append(counter)  #insert the new index in the key list of a product in dix
         except:
             #make a new list for the specific product
             #each entry in the list is a index to a tuple(afm,product1...) in mylist
@@ -19,24 +24,37 @@ def split_and_tuple(file, final_list, mydix):
     for line in f:          ## For loop on each line of the file
         if(line[0] == "-"): # continue to the next usefull line(New receipt)
             if(len(receipt) > 0):    #Check if last temp_list has usefull data(it doesnt in case of the 1st receipt)
-                receipt.pop(len(receipt)-2) # Pop the SUM WORD from the list
-                receipt_t=tuple(receipt[1:len(receipt)]) # Tuple of a receipt is ready(Without the AFM word)
-                final_list.append(receipt_t)  ##Added to the final list of tuples
+                receipt.pop(len(receipt)-2) # Pop ONLY the SUM WORD from the list
+                receipt_t = tuple(receipt[1:len(receipt)]) # Tuple of a receipt is ready(Without the AFM,SUM word)
+                ####### VALIDATE INPUT #########
+                ################################
+                receipt_t = receipt_t[0:len(receipt_t)-1]#POP THE SUM( now its useless)
 
                 #####
                 #Check Dictionary,add the restaurant(afm) and products so they map to the final_list index ,
-                # if exists you will get the number from dix in order to co-sum(NOT SURE IF THAT IS POSSIBLE YET)
-                add_to_dictionary(receipt_t, mydix, len(final_list)-1)
+                # if exists you will get the number from dix in order to recreate the tuple
+                try:
+                    index = mydix[receipt_t[0]]
+                    temp_list = list(final_list[index])
+                    for i in range(1, len(receipt_t)):
+                        temp_list.append(receipt_t[i])
+                    final_list[index] = tuple(temp_list)
+                    add_to_dictionary(receipt_t, mydix, index)
+                except:
+                    add_to_dictionary(receipt_t, mydix, len(final_list))
+                    final_list.append(receipt_t)  ##Added to the final list of tuples
 
-                #####
-            receipt=[]      #New temp_list(for our new receipt)
+            receipt=[]      #New temp_list(for    our new receipt)
             continue        ## No other words in the line
         for word in line.split(): ##Splitting each Line into words #   Tip:  .SPLIT won't split 'Product:' ,(No pop yet)
             receipt.append(word)
     f.close()
     return final_list,mydix
+##########################################################################################################
 
+##################################   2   #################################################################
 
+##########################################################################################################
 
 my_input=-1
 mydix={}
