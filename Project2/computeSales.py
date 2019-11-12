@@ -1,6 +1,19 @@
 ##################################   1   #################################################################
-#Python interpreter doesn't allocate mem for all the variables
-# --> if two or more variable has the same value it just map to that value
+def validate_input(receipt_t):
+    ## Check if the size of receipt is right(the right number of elements is n*7, for n=[1,+inf) )
+    res = True
+    sum = 0
+    if (not ((receipt_t[len(receipt_t)-1].casefold() == "συνολο:") and (receipt_t[0].casefold() == "αφμ:") and ((len(receipt_t[1]) == 10) and (receipt_t[1].isdigit())))): #afm name and number check
+        return False
+    for i in range(2, len(receipt_t)-2, 4): #Ignore 2 first and the 2 last elements of the receipt
+        if(not (receipt_t[i].replace(":","").isalpha() and receipt_t[i + 1].isdigit())): #Product name and quantity check
+            return False
+        if( not ((receipt_t[i + 2].replace(".","").isdigit()) and (receipt_t[i + 3].replace(":","").isdigit()))): #Price per element, sum for this element check
+            return False
+        if (int(receipt_t[i+1])*float(receipt_t[i+2]) == receipt_t[i+3]):
+            sum = sum + receipt_t[i+1]*receipt_t[i+2]
+
+
 #So we can use the average complexity O(1) of the dictionary to search fast products and afm
 def add_to_dictionary(rec_t, mydix, counter):
     try:
@@ -23,11 +36,16 @@ def split_and_tuple(file, final_list, mydix):
     receipt=[]
     for line in f:          ## For loop on each line of the file
         if(line[0] == "-"): # continue to the next usefull line(New receipt)
-            if(len(receipt) > 0):    #Check if last temp_list has usefull data(it doesnt in case of the 1st receipt)
+            if(len(receipt) > 0):    #Check if the LAST temp_list has usefull data(it doesnt in case of the 1st receipt)
+                ####### VALIDATE INPUT #########
+                res = validate_input(receipt_t)   #SEND ALL THE DATA OF THE LAST RECEIPT(in contrast with the dix where we send fewer data)
+                ################################
+                if (not(res)): #if is fault
+                    receipt = [] ##Reject the last receipt
+                    continue  #Continue with saving the next receipt line by line until you encounter "-"
                 receipt.pop(len(receipt)-2) # Pop ONLY the SUM WORD from the list
                 receipt_t = tuple(receipt[1:len(receipt)]) # Tuple of a receipt is ready(Without the AFM,SUM word)
-                ####### VALIDATE INPUT #########
-                ################################
+
                 receipt_t = receipt_t[0:len(receipt_t)-1]#POP THE SUM( now its useless)
 
                 #####
