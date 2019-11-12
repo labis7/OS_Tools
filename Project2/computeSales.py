@@ -1,20 +1,27 @@
 ##################################   1   #################################################################
-def validate_input(receipt_t):
-    ## Check if the size of receipt is right(the right number of elements is n*7, for n=[1,+inf) )
-    res = True
-    sum = 0
-    if (not ((receipt_t[len(receipt_t)-1].casefold() == "συνολο:") and (receipt_t[0].casefold() == "αφμ:") and ((len(receipt_t[1]) == 10) and (receipt_t[1].isdigit())))): #afm name and number check
-        return False
-    for i in range(2, len(receipt_t)-2, 4): #Ignore 2 first and the 2 last elements of the receipt
-        if(not (receipt_t[i].replace(":","").isalpha() and receipt_t[i + 1].isdigit())): #Product name and quantity check
-            return False
-        if( not ((receipt_t[i + 2].replace(".","").isdigit()) and (receipt_t[i + 3].replace(":","").isdigit()))): #Price per element, sum for this element check
-            return False
-        if (int(receipt_t[i+1])*float(receipt_t[i+2]) == receipt_t[i+3]):
-            sum = sum + receipt_t[i+1]*receipt_t[i+2]
+import os ##For path input support
 
+def validate_input(receipt):
+    ## Check if the size of receipt is right(the right numbepath=os.getcwd()+filer of elements is 4 + n*4, for n=[1,+inf) )
+    if(not ((len(receipt) - 4)/4).is_integer()): #IF its not INT, then ignore receipt
+        return False
+    sum = 0
+    if (not ((receipt[len(receipt) - 2].casefold() == "συνολο:") and (receipt[0].casefold() == "αφμ:") and ((len(receipt[1]) == 10) and (receipt[1].isdigit())))): #afm name and number check
+        return False
+    for i in range(2, len(receipt)-2, 4): #Ignore 2 first and the 2 last elements of the receipt
+        if(not (receipt[i].replace(":","").isalpha() and receipt[i + 1].isdigit())): #Product name and quantity check
+            return False
+        if( not ((receipt[i + 2].replace(".","").isdigit()) and (receipt[i + 3].replace(".","").isdigit()))): #Price per element, sum for this element check
+            return False
+        if (int(receipt[i+1])*float(receipt[i+2]) == float(receipt[i+3])): #Check the subpart sum,if its right, add it ot the whole sum
+            sum = sum + float(receipt[i+3])
+        else:
+            return False
+    if(sum == float(receipt[len(receipt)-1])): #Check if  the Sum is right
+        return True
 
 #So we can use the average complexity O(1) of the dictionary to search fast products and afm
+# (Worst case is O(n) but in rare cases where hash function is bad + when we have complicated structures in dix)
 def add_to_dictionary(rec_t, mydix, counter):
     try:
         mydix[rec_t[0]]  #If exists,do nothing
@@ -38,15 +45,13 @@ def split_and_tuple(file, final_list, mydix):
         if(line[0] == "-"): # continue to the next usefull line(New receipt)
             if(len(receipt) > 0):    #Check if the LAST temp_list has usefull data(it doesnt in case of the 1st receipt)
                 ####### VALIDATE INPUT #########
-                res = validate_input(receipt_t)   #SEND ALL THE DATA OF THE LAST RECEIPT(in contrast with the dix where we send fewer data)
+                res = validate_input(receipt)   #SEND ALL THE DATA OF THE LAST RECEIPT(in contrast with the dix where we send fewer data)
                 ################################
                 if (not(res)): #if is fault
                     receipt = [] ##Reject the last receipt
                     continue  #Continue with saving the next receipt line by line until you encounter "-"
-                receipt.pop(len(receipt)-2) # Pop ONLY the SUM WORD from the list
-                receipt_t = tuple(receipt[1:len(receipt)]) # Tuple of a receipt is ready(Without the AFM,SUM word)
 
-                receipt_t = receipt_t[0:len(receipt_t)-1]#POP THE SUM( now its useless)
+                receipt_t = tuple(receipt[1:len(receipt)-2]) # Tuple of a receipt is ready(Without the AFM word,SUM word,and SUM)
 
                 #####
                 #Check Dictionary,add the restaurant(afm) and products so they map to the final_list index ,
@@ -110,25 +115,22 @@ def search_afm(afm, mydix, mylist):
             final_list.append((prod, sum))      ##add the tuple to the requested list
     final_list.sort(key=lambda tup: tup[0])
     for i in final_list:   #### Printing
-        print(i[0], i[1])
+        print(i[0].replace(":", ""), i[1])
 
 ##########################################################################################################
 my_input=-1
 mydix={}
 mylist=[]
 while(my_input != 4):
-    my_input=input("Give your preference: (1: read new input file, 2: print statistics for a specific product, 3: print statistics for a specific AFM, 4: exit the program)")
+    my_input = input("Give your preference: (1: read new input file, 2: print statistics for a specific product, 3: print statistics for a specific AFM, 4: exit the program)")
     ########### Exception Handling ############
     #not yet handled
-    my_input=int(my_input)
+    my_input = int(my_input)
     ###########################################
 
     if(my_input == 1):
-        file = input("Give the name of the file:")
-
-        mylist,mydix=split_and_tuple(file, mylist, mydix) #a list of tuples is returned,
-        print(mylist)
-        print(mydix)
+        myfile = input("Give the name of the file:")
+        mylist,mydix=split_and_tuple(myfile, mylist, mydix) #a list of tuples is returned,
         # format of each touple:
         # (afm_num,prod_name1,quantity1,price_per_prod1,sum_of_prod1,prod_nameN,quantityN,price_per_prodN,sum_of_prodN,SUM)
     elif(my_input == 2):  ## Statistics according to a product
