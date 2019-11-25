@@ -9,16 +9,19 @@ def validate_input(receipt):
     if (not ((receipt[len(receipt) - 2].casefold() == "συνολο:") and (receipt[0].casefold() == "αφμ:") and ((len(receipt[1]) == 10) and (receipt[1].isdigit())))): #afm name and number check
         return False
     for i in range(2, len(receipt)-2, 4): #Ignore 2 first and the 2 last elements of the receipt
-        if(not (receipt[i].replace(":","").isalpha() and receipt[i + 1].isdigit())): #Product name and quantity check
+        if(not (receipt[i].replace("_","").replace(":","").isalpha() and receipt[i + 1].isdigit())): #Product name and quantity check Tip: If product names doesnt include "_",if you remove the replace of "_" you will get about x5-x10 improvemnt in saving the data :O
             return False
         if( not ((receipt[i + 2].replace(".","").isdigit()) and (receipt[i + 3].replace(".","").isdigit()))): #Price per element, sum for this element check
             return False
-        if (int(receipt[i+1])*float(receipt[i+2]) == float(receipt[i+3])): #Check the subpart sum,if its right, add it ot the whole sum
+        if (round(int(receipt[i+1])*float(receipt[i+2]),2) == float(receipt[i+3])): #Check the subpart sum,if its right, add it ot the whole sum
             sum = sum + float(receipt[i+3])
         else:
             return False
-    if(sum == float(receipt[len(receipt)-1])): #Check if  the Sum is right
+    sum=round(sum,2)
+    if( sum == float(receipt[len(receipt)-1])): #Check if  the Sum is right
         return True
+    else:
+        return False
 
 #So we can use the average complexity O(1) of the dictionary to search fast products and afm
 # (Worst case is O(n) but in rare cases where hash function is bad + when we have complicated structures in dix)
@@ -38,7 +41,7 @@ def add_to_dictionary(rec_t, mydix, counter):
 
 
 def split_and_tuple(file, final_list, mydix):
-    f = open(file)
+    f = open(file,encoding='utf-8')
     final_list=[]
     receipt=[]
     for line in f:          ## For loop on each line of the file
@@ -69,7 +72,7 @@ def split_and_tuple(file, final_list, mydix):
 
             receipt=[]      #New temp_list(for    our new receipt)
             continue        ## No other words in the line
-        for word in line.split(): ##Splitting each Line into words #   Tip:  .SPLIT won't split 'Product:' ,(No pop yet)
+        for word in line.split(): ##Splitting each Line into words #   Tip:  .SPLIT won't split 'Product:'
             receipt.append(word)
     f.close()
     return final_list,mydix
@@ -89,7 +92,7 @@ def search_product(prod, mydix, mylist):
         for j in range(1, len(tupl), 4):  #for each entry in tuples
             if(tupl[j].casefold() == prod.casefold()): ##Compare each PRODUCT entrie in tuples
                 sum = sum + float(tupl[j+3])   # Sum of the product price per AFM
-        final_list.append((tupl[0], sum))       #Build the requested list
+        final_list.append((tupl[0], round(sum,2)))       #Build the requested list
     final_list.sort(key=lambda tup: tup[0])     #Sorting according to the 1st element of the tuples in the list
     for i in final_list:   #### Printing
         print(i[0], i[1])
@@ -112,7 +115,7 @@ def search_afm(afm, mydix, mylist):
             if (tupl[i].casefold() == tupl[j].casefold()):
                 sum = sum + float(tupl[j+3])
         if(not(sum == 0)):  ## when sum == 0 --> we are talking about an element that is already counted,and we skip it
-            final_list.append((prod, sum))      ##add the tuple to the requested list
+            final_list.append((prod, round(sum, 2)))      ##add the tuple to the requested list
     final_list.sort(key=lambda tup: tup[0])
     for i in final_list:   #### Printing
         print(i[0].replace(":", ""), i[1])
