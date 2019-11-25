@@ -9,7 +9,7 @@ def validate_input(receipt):
     if (not ((receipt[len(receipt) - 2].casefold() == "συνολο:") and (receipt[0].casefold() == "αφμ:") and ((len(receipt[1]) == 10) and (receipt[1].isdigit())))): #afm name and number check
         return False
     for i in range(2, len(receipt)-2, 4): #Ignore 2 first and the 2 last elements of the receipt
-        if(not (receipt[i].replace("_","").replace(":","").isalpha() and receipt[i + 1].isdigit())): #Product name and quantity check Tip: If product names doesnt include "_",if you remove the replace of "_" you will get about x5-x10 improvemnt in saving the data :O
+        if(not (receipt[i + 1].isdigit())): #quantity check(Int value)
             return False
         if( not ((receipt[i + 2].replace(".","").isdigit()) and (receipt[i + 3].replace(".","").isdigit()))): #Price per element, sum for this element check
             return False
@@ -61,14 +61,36 @@ def split_and_tuple(file, final_list, mydix):
                 # if exists you will get the number from dix in order to recreate the tuple
                 try:
                     index = mydix[receipt_t[0]]        #get index in the main list of the afm
-                    temp_list = list(final_list[index])#make a list so we can append more elements
-                    for i in range(1, len(receipt_t)): #
-                        temp_list.append(receipt_t[i])
+                    temp_list = list(final_list[index])#make a list so we can calc the new data
+
+                    for i in range(1, len(receipt_t), 4): #
+                        found = False
+                        for j in range(1, len(temp_list), 4):
+                            if (receipt_t[i].casefold() == temp_list[j].casefold()):
+                                found = True
+                                temp_list[j + 1] = int(receipt_t[i + 1]) + int(temp_list[j + 1])#add the quantities and update
+                                temp_list[j + 3] = float(temp_list[j + 3]) + float(receipt_t[i + 3])  #update the new sum of the product
+
+                        if(not (found)):
+                            temp_list.extend(receipt_t[i:(i+4)])
                     final_list[index] = tuple(temp_list)      # Shape the entry of the main list
                     add_to_dictionary(receipt_t, mydix, index)#update dictionary
                 except:
                     add_to_dictionary(receipt_t, mydix, len(final_list))
-                    final_list.append(receipt_t)             ##Added to the final list of tuples
+                    temp_list = [receipt_t[0]]
+                    for i in range(1, len(receipt_t), 4):        #for each product in tuple
+                        quan_sum = 0 #for each product
+                        sum = 0
+                        prod = receipt_t[i]
+                        for j in range(i, len(receipt_t), 4):      #find if there are more than 1 products like that and make the sums
+                            if(prod in receipt_t[:i]):             #check if you have already calc before this product(so its already calculated because of the 1st appear of this prod.)
+                                break
+                            if (receipt_t[i].casefold() == receipt_t[j].casefold()):
+                                quan_sum = quan_sum + int(receipt_t[j+1])
+                                sum = sum + float(receipt_t[j+3])
+                        if( not (sum == 0)):
+                            temp_list.extend([receipt_t[i],quan_sum,receipt_t[i+2],sum])
+                    final_list.append(tuple(temp_list))             ##Added to the final list of tuples
 
             receipt=[]      #New temp_list(for    our new receipt)
             continue        ## No other words in the line
@@ -144,5 +166,3 @@ while(my_input != 4):
         search_afm(afm, mydix, mylist)
     elif(my_input == 4):
         exit(0)
-
-
