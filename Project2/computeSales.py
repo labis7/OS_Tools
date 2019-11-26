@@ -114,7 +114,7 @@ def search_product(prod, mydix, mylist):
         for j in range(1, len(tupl), 4):  #for each entry in tuples
             if(tupl[j].casefold() == prod.casefold()): ##Compare each PRODUCT entrie in tuples
                 sum = sum + float(tupl[j+3])   # Sum of the product price per AFM
-        final_list.append((tupl[0], round(sum,2)))       #Build the requested list
+        final_list.append((tupl[0].upper(), round(sum,2)))       #Build the requested list
     final_list.sort(key=lambda tup: tup[0])     #Sorting according to the 1st element of the tuples in the list
     for i in final_list:   #### Printing
         print(i[0], i[1])
@@ -137,7 +137,7 @@ def search_afm(afm, mydix, mylist):
             if (tupl[i].casefold() == tupl[j].casefold()):
                 sum = sum + float(tupl[j+3])
         if(not(sum == 0)):  ## when sum == 0 --> we are talking about an element that is already counted,and we skip it
-            final_list.append((prod, round(sum, 2)))      ##add the tuple to the requested list
+            final_list.append((prod.upper(), round(sum, 2)))      ##add the tuple to the requested list
     final_list.sort(key=lambda tup: tup[0])
     for i in final_list:   #### Printing
         print(i[0].replace(":", ""), i[1])
