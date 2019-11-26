@@ -89,7 +89,7 @@ def split_and_tuple(file, final_list, mydix):
                                 quan_sum = quan_sum + int(receipt_t[j+1])
                                 sum = sum + float(receipt_t[j+3])
                         if( not (sum == 0)):
-                            temp_list.extend([receipt_t[i],quan_sum,receipt_t[i+2],sum])
+                            temp_list.extend([receipt_t[i],quan_sum,receipt_t[i+2],sum]) #New product for this afm
                     final_list.append(tuple(temp_list))             ##Added to the final list of tuples
 
             receipt=[]      #New temp_list(for    our new receipt)
@@ -150,7 +150,10 @@ while(my_input != 4):
     my_input = input("Give your preference: (1: read new input file, 2: print statistics for a specific product, 3: print statistics for a specific AFM, 4: exit the program)")
     ########### Exception Handling ############
     #not yet handled
-    my_input = int(my_input)
+    try:
+        my_input = int(my_input)
+    except:
+        my_input = -1
     ###########################################
 
     if(my_input == 1):
