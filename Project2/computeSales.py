@@ -42,7 +42,6 @@ def add_to_dictionary(rec_t, mydix, counter):
 
 def split_and_tuple(file, final_list, mydix):
     f = open(file,encoding='utf-8')
-    final_list=[]
     receipt=[]
     for line in f:          ## For loop on each line of the file
         if(line[0] == "-"): # continue to the next usefull line(New receipt)
