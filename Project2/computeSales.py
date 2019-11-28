@@ -156,15 +156,15 @@ while(my_input != 4):
     ###########################################
 
     if(my_input == 1):
-        myfile = input("Give the name of the file:")
+        myfile = input("Give the name of the file:\n")
         mylist,mydix=split_and_tuple(myfile, mylist, mydix) #a list of tuples is returned,
         # format of each touple:
         # (afm_num,prod_name1,quantity1,price_per_prod1,sum_of_prod1,prod_nameN,quantityN,price_per_prodN,sum_of_prodN,SUM)
     elif(my_input == 2):  ## Statistics according to a product
-        prod = input("Insert product name:")
+        prod = input("Insert product name:\n")
         search_product(prod+":", mydix, mylist)
     elif(my_input == 3): ## Statistics according to AFM
-        afm = input("Insert AFM:")
+        afm = input("Insert AFM:\n")
         search_afm(afm, mydix, mylist)
     elif(my_input == 4):
         exit(0)
