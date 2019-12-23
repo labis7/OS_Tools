@@ -32,7 +32,7 @@ int main ( int argc , char *argv[])
 	myaddr.sin_family = AF_INET ; /* internet addr family */
 	if ( bind( lsock ,( struct sockaddr *)&myaddr , sizeof(myaddr) ) )
 		perror_exit("bind") ;
-	/* * listen for c o n n e c t i o n s with Qsize =5 * */
+	/* * listen for connections with Qsize =5 * */
 	if ( listen(lsock , 5) != 0 )
 		perror_exit("listen");
 	while(1)  // main loop : accept - read - write */ 
@@ -50,8 +50,9 @@ int main ( int argc , char *argv[])
 			perror_exit("reading dirname");
 		sanitize(dirname);/* clear wild characters*/
 		snprintf(command , BUFSIZ , "ls %s" , dirname ) ;/* Invoke ls through popen */
-		if (( pipe_fp = popen(command, "r")) == NULL )
-			perror_exit ("popen") ;
+		//creating a pipe between the calling program and the executed command, 
+		//where the return value is the readable end of the pipe
+		if (( pipe_fp = popen(command, "r")) == NULL )  
 		/* transfer data from ls to socket */
 		while( ( c = getc(pipe_fp) ) != EOF )
 			putc(c , sock_fp ) ;

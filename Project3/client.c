@@ -16,7 +16,7 @@ void perror_exit( char *message )
 }
 
 /* Write () repeatedly until ’ size ’ bytes are written */
-int write_all(int fd , void *buff , size_t size ) 
+int write_all(int fd , void *buff , size_t size )
 {
 	int sent , n ;
 	for ( sent = 0; sent < size ; sent += n ) {
@@ -53,7 +53,7 @@ int main ( int argc , char *argv[])
 	/* set socket type */
 	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
 	perror_exit("connect");
-	/* Step 3: send d i r e c t o r y name + newline */
+	/* Step 3: send directory name + newline */
 	if ( write_all(sock , argv[2] , strlen(argv[2])) == -1)
 		perror_exit("write") ;
 	if ( write_all( sock , "\n", 1) == -1 )
