@@ -1,5 +1,6 @@
 all:
-	gcc -o test server.c -Wall
-	./test
+	gcc -o server server.c -Wall
+	gcc -o client client.c -Wall	
 clean:
-	rm test
+	rm server
+	rm client

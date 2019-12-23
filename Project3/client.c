@@ -1,71 +1,68 @@
-/* i n e t _ s t r _ c l i e n t . c : Internet stream sockets client */
-#include <stdio.h>
-#include <sys/types.h>
-/* sockets */
-#include <sys/socket.h>
-/* sockets */
-#include <netinet/in.h>
-/* internet sockets */
-#include <unistd.h>
-/* read , write , close */
-#include <netdb.h>
-/* g e t h o s t b y a d d r */
-#include <stdlib.h>
-/* exit */
+	#include <stdio.h>
 #include <string.h>
-/* strlen */
-void perror_exit( char *message ) ;
-void main( int argc , char *argv[]) {
-int port , sock , i ;
-char buf[256];
-struct sockaddr_in server ;
-struct sockaddr *serverptr = ( struct sockaddr*) &server ;
-struct hostent *rem ;
-if( argc != 3) {
-printf("Please give host name and port number\n");
-exit(1) ;}
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>// internet sockets
+#include <netdb.h> 	//gethostbyname
+#define PORTNUM 15000
+#define BUFFSIZE 256
 
-
-/* Create socket */
-if(( sock = socket( AF_INET , SOCK_STREAM , 0) ) < 0)
-perror_exit("socket") ;
-/* Find server address */
-if(( rem = gethostbyname( argv[1]) ) == NULL ) {
-herror("gethostbyname") ; exit(1) ;
-}
-port = atoi( argv[2]) ; /* Convert port number to integer */
-server.sin_family = AF_INET;
-/* Internet domain */
-memcpy(&server.sin_addr , rem -> h_addr , rem -> h_length ) ;
-server.sin_port = htons( port ) ;
-/* Server port */
-/* I n itiate c o n n e c t i o n */
-if ( connect( sock , serverptr , sizeof( server ) ) < 0)
-perror_exit("connect") ;
-printf("Connecting to %s port %d\n" , argv[1] , port ) ;
-
-
-do 
+void perror_exit( char *message )
 {
-	printf("Give input string:") ;
-	fgets( buf , sizeof(buf) , stdin ) ; /* Read from stdin */
-	for( i =0; buf[i] != '\0'; i++) { /* For every char */
-		/* Send i - th c h a r a c t e r */
-		if(write( sock , buf + i , 1) < 0)
-		perror_exit("write") ;
-		/* receive i - th c h a r a c t e r t r a n s f o r m e d */
-		if(read ( sock , buf + i , 1) < 0)
-		perror_exit("read");
+	perror ( message ) ;
+	exit ( EXIT_FAILURE ) ;
+}
+
+/* Write () repeatedly until ’ size ’ bytes are written */
+int write_all(int fd , void *buff , size_t size ) 
+{
+	int sent , n ;
+	for ( sent = 0; sent < size ; sent += n ) {
+		if (( n = write ( fd , buff + sent , size - sent ) ) == -1)
+			return -1; /* error */
 	}
-	printf("Received string : %s", buf );
-} while(strcmp( buf , "END\n") != 0) ; /* Finish on " end " */
-close(sock) ;
-/* Close socket and exit */
+	return sent ;
 }
 
-
-void perror_exit(char *message )
+int main ( int argc , char *argv[]) 
 {
-	perror(message) ;
-	exit(EXIT_FAILURE) ;
+	struct sockaddr_in servadd ; // The address of server
+	struct hostent *hp ; // to resolve server ip
+	int sock , n_read ; // socket and message length
+	char buffer[BUFFSIZE]; // to receive message
+
+	if ( argc != 3 ) 
+	{
+		puts("Usage: rls <hostname> <directory>");
+		exit(1);
+	}
+	/* Step 1: Get a socket */
+	if (( sock = socket( AF_INET , SOCK_STREAM , 0) ) == -1 )
+	perror_exit("socket") ;
+	/* Step 2: lookup server ’s address and connect there */
+	if (( hp = gethostbyname(argv[1])) == NULL )
+	{
+		herror ("gethostbyname");
+		exit(1);
+	}
+	memcpy(&servadd.sin_addr , hp -> h_addr , hp -> h_length );
+	servadd.sin_port = htons(PORTNUM); /* set port number */
+	servadd.sin_family = AF_INET;
+	/* set socket type */
+	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
+	perror_exit("connect");
+	/* Step 3: send d i r e c t o r y name + newline */
+	if ( write_all(sock , argv[2] , strlen(argv[2])) == -1)
+		perror_exit("write") ;
+	if ( write_all( sock , "\n", 1) == -1 )
+		perror_exit ("write");
+	/* Step 4: read back results and send them to stdout */
+	while(( n_read = read( sock , buffer , BUFFSIZE ) ) > 0 )
+		if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
+			perror_exit("fwrite");
+
+	close(sock);
+	return 0;
 }
