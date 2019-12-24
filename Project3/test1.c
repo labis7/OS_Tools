@@ -100,7 +100,7 @@ int main(int argc , char *argv[])
       
          
         activity = select( max_sd + 1 , &read_fd_set , NULL , NULL , NULL);  //Waiting...no timeout 
-        printf("NEW ACTIVITY DETECTED\n");
+        //printf("NEW ACTIVITY DETECTED\n");
         if ((activity < 0) && (errno!=EINTR))   
         {   
             printf("select error");   
@@ -166,12 +166,22 @@ int main(int argc , char *argv[])
                 //Echo back the message that came in  
                 else 
                 {   
+                    //char *line = NULL;
+                    //size_t len = 0;
+                    //ssize_t read;
+
                     //set the string terminating NULL byte on the end  
                     //of the data read  
                     buffer[valread] = '\0';  
-                    printf("New IO activity!:"); 
-                    printf("\n%s\n",buffer);
-                    send(sd , buffer , strlen(buffer) , 0 );   
+                    //getline(&line, &len, buffer);
+                    //printf("New IO activity!:");
+                    char *ptr = strtok(buffer,"\n");
+                    while(ptr != NULL){
+                        printf("New Command: %s",ptr);
+                        printf("\n");
+                        //send(sd , buffer , strlen(buffer) , 0 );   
+                        ptr = strtok(NULL,"\n");
+                    }
                 }   
             }   
         }   
