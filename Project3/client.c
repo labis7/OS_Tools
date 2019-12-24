@@ -60,12 +60,42 @@ int main ( int argc , char *argv[])
 
 	
 
+
+	////////// File Opening and Reading /////////////
+	FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fp = fopen(argv[2], "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+
+    while ((read = getline(&line, &len, fp)) != -1) 
+    {
+        printf("Retrieved line of length %zu:\n", read);
+        printf("%s", line);
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+
+
+
+	/////////////////////////////////////////////////
 	while(1)
 	{
+
+
+		/*
 		sleep(2);
 		if(write_all(sock, "labiz", 5) == -1)
 			perror_exit("write");
-	
+		n_read = read( sock , buffer , BUFFSIZE );
+		if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
+			perror_exit("fwrite");
+		*/
 	}
 	
 	/*
