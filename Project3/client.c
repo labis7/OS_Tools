@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>// internet sockets
 #include <netdb.h> 	//gethostbyname
-#define PORTNUM 15000
+#define PORTNUM 8888
 #define BUFFSIZE 256
 
 void perror_exit( char *message )
@@ -53,15 +53,32 @@ int main ( int argc , char *argv[])
 	/* set socket type */
 	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
 	perror_exit("connect");
-	/* Step 3: send directory name + newline */
+	
+	n_read = read( sock , buffer , BUFFSIZE );
+	if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
+		perror_exit("fwrite");
+
+	
+
+	while(1)
+	{
+		sleep(2);
+		if(write_all(sock, "labiz", 5) == -1)
+			perror_exit("write");
+	
+	}
+	
+	/*
+	// Step 3: send directory name + newline 
 	if ( write_all(sock , argv[2] , strlen(argv[2])) == -1)
 		perror_exit("write") ;
 	if ( write_all( sock , "\n", 1) == -1 )
 		perror_exit ("write");
-	/* Step 4: read back results and send them to stdout */
+	// Step 4: read back results and send them to stdout 
 	while(( n_read = read( sock , buffer , BUFFSIZE ) ) > 0 )
 		if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
 			perror_exit("fwrite");
+	*/
 
 	close(sock);
 	return 0;
