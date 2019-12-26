@@ -11,17 +11,60 @@
      
 #define TRUE   1  
 #define FALSE  0  
-#define PORT 8888  
+ 
+void run_commands(int read_fd);
      
 int main(int argc , char *argv[])   
 {   
+    int fd,fd2;
+    char *fifo = "myfifo"; 
+    if ( argc != 3 ) 
+    {
+        puts("Usage: rls <Port> <Number Of Children>");
+        exit(1);
+    }
+    int PORT = atoi(argv[1]); 
+    int ch_num = atoi(argv[2]);
+
+    if ( mkfifo( fifo , 0666) == -1 ) {
+        if ( errno != EEXIST ) {
+            perror("mkfifo");
+            exit(1);
+        }
+        if ( ( fd = open( fifo , O_WRONLY ) ) < 0) {
+            perror("fifo open/write problem") ;
+            exit(3);
+        }
+        if ( ( fd2 = open( fifo , O_RONLY ) ) < 0) {
+            perror("fifo open/read problem");
+            exit(3);
+        }
+
+    }
+
+    int pid;
+    for(int i =0; i < ch_num; i++)
+    {
+        pid = fork();
+        if(pid == 0)
+            break;
+    }    
+    if(pid == 0)
+    {
+        run_commands(fd2);
+    }
+    char * myfifo = "myfifo"; 
     int opt = TRUE;   
     int lsocket , addrlen , new_socket , csocket[30] , max_clients = 30 , activity, i , valread , sd;   
     int max_sd;   
     struct sockaddr_in myaddr;   
-         
+        
     char buffer[1025];  //data buffer of 1K  
          
+
+    
+    printf("%d\n", PORT);
+
     //set of socket descriptors  
     fd_set read_fd_set;   
          
@@ -52,9 +95,9 @@ int main(int argc , char *argv[])
     //type of socket created  
     myaddr.sin_family = AF_INET;   
     myaddr.sin_addr.s_addr = INADDR_ANY;   
-    myaddr.sin_port = htons( PORT );   
+    myaddr.sin_port = htons( PORT); // Requested port   
          
-    //bind the socket to localhost port 8888  
+    //bind the socket to localhost port  
     if (bind(lsocket, (struct sockaddr *)&myaddr, sizeof(myaddr))<0)   
     {   
         perror("bind failed");   
@@ -188,4 +231,11 @@ int main(int argc , char *argv[])
     }   
          
     return 0;   
+}
+
+
+void run_commands(int read_fd)
+{
+    int fd = read_fd;
+    
 }

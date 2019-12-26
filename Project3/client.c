@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>// internet sockets
 #include <netdb.h> 	//gethostbyname
-#define PORTNUM 8888
+
 #define BUFFSIZE 256
 
 void perror_exit( char *message )
@@ -33,11 +33,13 @@ int main ( int argc , char *argv[])
 	int sock , n_read ; // socket and message length
 	char buffer[BUFFSIZE]; // to receive message
 
-	if ( argc != 3 ) 
+	if ( argc != 5 ) 
 	{
-		puts("Usage: rls <hostname> <directory>");
+		puts("Usage: rls <hostname> <Server Port> <Receive Port> <FILE>");
 		exit(1);
 	}
+	int S_PORT = atoi(argv[2]); 
+	int R_PORT = atoi(arv[3]);
 	/* Step 1: Get a socket */
 	if (( sock = socket( AF_INET , SOCK_STREAM , 0) ) == -1 )
 	perror_exit("socket") ;
@@ -48,7 +50,7 @@ int main ( int argc , char *argv[])
 		exit(1);
 	}
 	memcpy(&servadd.sin_addr , hp -> h_addr , hp -> h_length );
-	servadd.sin_port = htons(PORTNUM); /* set port number */
+	servadd.sin_port = htons(S_PORT); /* set port number */
 	servadd.sin_family = AF_INET;
 	/* set socket type */
 	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
@@ -67,7 +69,7 @@ int main ( int argc , char *argv[])
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen(argv[2], "r");
+    fp = fopen(argv[4], "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
 	

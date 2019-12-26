@@ -11,30 +11,39 @@ main () {
 char inbuf [ MSGSIZE ];
 int p [2] , i =0 , rsize =0;
 pid_t pid ;
+int test=1;
 if ( pipe ( p ) == -1) { perror ( " pipe call " ) ; exit (1) ;}
-switch ( pid = fork () ) {
-case -1: perror ( " fork call " ) ; exit (2) ;
-case 0: 
-printf("writing\n");	
-write ( p [1] , msg1 , MSGSIZE ) ;
-// if child then write !
-printf("writing\n");
-write ( p [1] , msg2 , MSGSIZE ) ;
-printf("writing\n");
-write ( p [1] , msg3 , MSGSIZE ) ;
+switch ( pid = fork () ) 
+{
+	case -1: perror ( " fork call " ) ; exit (2) ;
+	case 0: 
+		test=2;
+		printf("writing\n");	
+		write ( p [1] , msg1 , MSGSIZE ) ;
+		// if child then write !
+		printf("writing\n");
+		write ( p [1] , msg2 , MSGSIZE ) ;
+		printf("writing\n");
+		write ( p [1] , msg3 , MSGSIZE ) ;
 
-printf("dONE\n");
-break ;
-default : for ( i =0; i <5; i ++) {
-// if parent then read !
-write ( p [1] , msg1 , MSGSIZE ) ;
-write ( p [1] , msg2 , MSGSIZE ) ;
-sleep(1);
-rsize = read ( p [0] , inbuf , MSGSIZE ) ;
-printf("read done!\n");
-printf ( " %.*s \n " , rsize , inbuf ) ;
+		printf("dONE\n");
+		break ;
+	default : for ( i =0; i <5; i ++)
+				{
+			// if parent then read !
+					write ( p [1] , msg1 , MSGSIZE ) ;
+					write ( p [1] , msg2 , MSGSIZE ) ;
+					sleep(1);
+					rsize = read ( p [0] , inbuf , MSGSIZE ) ;
+					printf("read done!\n");
+					printf ( " %.*s \n " , rsize , inbuf ) ;
+				}
+			wait ( NULL ) ;
 }
-wait ( NULL ) ;
-}
+if(pid!=0)
+	printf("\n%d\n",test);
+else
+	printf("\nchILD: %d\n",test);
+
 exit (0) ;
 }
