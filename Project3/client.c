@@ -39,7 +39,7 @@ int main ( int argc , char *argv[])
 		exit(1);
 	}
 	int S_PORT = atoi(argv[2]); 
-	int R_PORT = atoi(arv[3]);
+	int R_PORT = atoi(argv[3]);
 	/* Step 1: Get a socket */
 	if (( sock = socket( AF_INET , SOCK_STREAM , 0) ) == -1 )
 	perror_exit("socket") ;

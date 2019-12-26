@@ -1,6 +1,7 @@
 #include <stdio.h>  
 #include <string.h>   //strlen  
 #include <stdlib.h>  
+#include <fcntl.h>
 #include <errno.h>  
 #include <unistd.h>   //close  
 #include <arpa/inet.h>    //close  
@@ -9,6 +10,7 @@
 #include <netinet/in.h>  
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros  
      
+#define MSGSIZE 106 // 100 MAX for command      + 4 bytes int + 1 space char + 1(safety - maybe '\0')   
 #define TRUE   1  
 #define FALSE  0  
  
@@ -16,31 +18,22 @@ void run_commands(int read_fd);
      
 int main(int argc , char *argv[])   
 {   
-    int fd,fd2;
+    char command[MSGSIZE];
+    
     char *fifo = "myfifo"; 
     if ( argc != 3 ) 
     {
         puts("Usage: rls <Port> <Number Of Children>");
         exit(1);
     }
+    
     int PORT = atoi(argv[1]); 
     int ch_num = atoi(argv[2]);
-
-    if ( mkfifo( fifo , 0666) == -1 ) {
-        if ( errno != EEXIST ) {
-            perror("mkfifo");
-            exit(1);
-        }
-        if ( ( fd = open( fifo , O_WRONLY ) ) < 0) {
-            perror("fifo open/write problem") ;
-            exit(3);
-        }
-        if ( ( fd2 = open( fifo , O_RONLY ) ) < 0) {
-            perror("fifo open/read problem");
-            exit(3);
-        }
-
-    }
+    
+    
+    int fd[2];
+    pipe(fd);
+    
 
     int pid;
     for(int i =0; i < ch_num; i++)
@@ -51,19 +44,19 @@ int main(int argc , char *argv[])
     }    
     if(pid == 0)
     {
-        run_commands(fd2);
+        close(fd[1]);//Only parent writing
+        run_commands(fd[0]);
     }
-    char * myfifo = "myfifo"; 
+
+    close(fd[0]);//Parent only writes.
+
+
     int opt = TRUE;   
     int lsocket , addrlen , new_socket , csocket[30] , max_clients = 30 , activity, i , valread , sd;   
     int max_sd;   
     struct sockaddr_in myaddr;   
         
-    char buffer[1025];  //data buffer of 1K  
-         
-
-    
-    printf("%d\n", PORT);
+    char buffer[MSGSIZE];  //data buffer of 1K  
 
     //set of socket descriptors  
     fd_set read_fd_set;   
@@ -96,7 +89,7 @@ int main(int argc , char *argv[])
     myaddr.sin_family = AF_INET;   
     myaddr.sin_addr.s_addr = INADDR_ANY;   
     myaddr.sin_port = htons( PORT); // Requested port   
-         
+    //printf("EKEI PROBLEMA\n");   
     //bind the socket to localhost port  
     if (bind(lsocket, (struct sockaddr *)&myaddr, sizeof(myaddr))<0)   
     {   
@@ -220,8 +213,19 @@ int main(int argc , char *argv[])
                     //printf("New IO activity!:");
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){
-                        printf("New Command: %s",ptr);
-                        printf("\n");
+                        //printf("New Command: %s",ptr);
+                        //printf("\n");
+                        //snprintf(command, MSGSIZE ,"8889 %s", ptr);
+                        //printf("Size of the final command:%d ,ptr size : %d\n",strlen(command),strlen(ptr));
+                        strcpy(command,"8889 ");
+                        strcat(command, ptr);
+                        
+                        
+                        if (write(fd[1] , command, MSGSIZE) == -1)
+                        {    perror("Error in Writing"); 
+                             exit(2) ;
+                        } 
+                        
                         //send(sd , buffer , strlen(buffer) , 0 );   
                         ptr = strtok(NULL,"\n");
                     }
@@ -237,5 +241,17 @@ int main(int argc , char *argv[])
 void run_commands(int read_fd)
 {
     int fd = read_fd;
-    
+    char buff[MSGSIZE];
+    //int fd = read_fd;
+    if ( read(fd , buff , MSGSIZE) < 0) 
+    {
+        perror ("Problem in reading.") ;
+        exit(5) ;
+    }
+    printf("%s\n", buff);
+    //("THread:%d finished\n", getpid());
+    //printf("%s\n",buff);
+    exit(0);
+
+    //snprintf( command , BUFSIZ , "ls %s" , dirname ) ;
 }
