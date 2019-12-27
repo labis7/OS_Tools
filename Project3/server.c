@@ -245,7 +245,54 @@ void run_commands(int read_fd)
     char command[MSGSIZE];
 
 
-    
+    //////// UDP socket setup for transmit  /////
+    int sock;
+
+    struct hostend *rem;
+    struct sockaddr_in server , client ;
+    unsigned int serverlen = sizeof(server) ;
+    struct sockaddr *serverptr = (struct sockaddr *)&server ;
+    struct sockaddr *clientptr = (struct sockaddr *)&client ;
+
+    if (( sock = socket(AF_INET , SOCK_DGRAM , 0) ) < 0)
+    {
+        perror("socket") ; 
+        exit(1) ;
+    }
+    /* Find server ’s IP address */
+    char *sk="sk";
+    if (( rem = gethostbyname(sk) ) == NULL ) 
+    {
+        herror( "gethostbyname" ) ;
+        exit(1) ;
+    }
+
+
+    // Setup server ’s IP address and port 
+    server.sin_family = AF_INET ;
+    // Internet domain 
+    memcpy(&server.sin_addr , rem -> h_addr , rem -> h_length ) ;
+    server.sin_port = htons(8889) ;
+    // Setup my address 
+    client.sin_family = AF_INET ;
+    // Internet domain 
+    client.sin_addr.s_addr = htonl(INADDR_ANY); // Any address 
+    client.sin_port = htons(0) ;
+
+
+    if ( bind (sock , clientptr , sizeof(client)) < 0) 
+    {
+        perror("bind"); 
+        exit(1);
+    }
+
+    if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
+     {
+        perror("sendto");
+        exit(1);
+    }
+
+    /////////////////////////////////
 
 
 
