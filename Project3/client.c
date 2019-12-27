@@ -7,7 +7,7 @@
 #include <netinet/in.h>// internet sockets
 #include <netdb.h> 	//gethostbyname
 
-#define BUFFSIZE 256
+#define BUFFSIZE 512
 
 void perror_exit( char *message )
 {
@@ -31,7 +31,6 @@ int main ( int argc , char *argv[])
 	struct sockaddr_in servadd ; // The address of server
 	struct hostent *hp ; // to resolve server ip
 	int sock , n_read ; // socket and message length
-	char buffer[BUFFSIZE]; // to receive message
 
 	if ( argc != 5 ) 
 	{
@@ -56,22 +55,14 @@ int main ( int argc , char *argv[])
 	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
 	perror_exit("connect");
 	
-	n_read = read( sock , buffer , BUFFSIZE );
-	if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
-		perror_exit("fwrite");
+	//n_read = read( sock , buffer , BUFFSIZE );
+	//if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
+	//	perror_exit("fwrite");
 
 	
 
 
-	////////// File Opening /////////////
-	FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
-    fp = fopen(argv[4], "r");
-    if (fp == NULL)
-        exit(EXIT_FAILURE);
+	
 	
 
 
@@ -90,6 +81,126 @@ int main ( int argc , char *argv[])
 	}
 		*/
 
+
+//////////////////////////// setup UDP ////////////////////////////////////////
+    
+
+    if (fork() != 0) //FATHER will be accepting results
+    {
+
+    	int opt = TRUE;   
+    	int UDP_FD , myaddrlen , new_socket , csocket[30] , max_clients = 30 , activity, i , valread , sd;   
+    	int max_fd;   
+    	struct sockaddr_in myaddr,client;  
+    	struct sockaddr *myaddrptr = ( struct sockaddr *)&myaddr ; 
+    	struct sockaddr *clientptr = ( struct sockaddr *)&client ;
+        char *clientname;
+    	char buffer[BUFFSIZE];
+
+    	fd_set rset;
+
+    	if (( sock = socket(AF_INET , SOCK_DGRAM , 0) ) < 0) // Creating UDP Socket
+			perror_exit("socket") ;
+
+    	myaddr.sin_family = AF_INET; 
+    	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    	myaddr.sin_port = htons(R_PORT);
+    	myaddrlen = sizeof(myaddr);
+
+    	if( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )   
+    	{   
+        	perror("setsockopt");   
+        	exit(EXIT_FAILURE);   
+    	} 
+
+
+    	//Binding
+    	if ( bind(sock , myaddrptr , addrlen) < 0)
+			perror_exit("bind");
+
+		// Discover selected port 
+		if(getsockname( sock , serverptr , &myaddrlen ) < 0)
+			perror_exit( " getsockname " ) ;
+    	clientlen = sizeof(client);
+
+
+    	
+    	//max_fd = UDP_FD +1;
+    	while(1)
+    	{
+    		FD_ZERO(&rset);
+    		FD_SET(UDP_FD, &rset);
+    		
+    		max_fd = UDP_FD 
+    		//add child sockets to set  
+	        for ( i = 0 ; i < max_clients ; i++)   
+	        {   
+	            //socket descriptor  
+	            UDP_FD = csocket[i];   
+	                 
+	            //if valid socket descriptor then add to read list  
+	            if(UPD_fd > 0)   
+	                FD_SET( UDP_FD , &rset);   
+	                 
+	            //highest file descriptor number, need it for the select function  
+	            if(UDP_FD > max_fd)   
+	                max_fd = UDP_fd;   
+	        }  
+			
+    		activity = select(max_fd, &rset, NULL, NULL, NULL); 
+
+    		if ((activity < 0) && (errno!=EINTR))   
+        	{   
+            	printf("select error");   
+        	} 
+
+        	//for (i = 0; i < max_clients; i++)   
+        	//{   
+            //	UPD_fd = csocket[i]; 
+			if (FD_ISSET(UDP_fd, &rset))
+    		{
+    			
+ 	            if ((valread = recvfrom(UDP_fd, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen)) == 0)   
+                {   
+                    //Somebody disconnected , get his details and print     
+                         
+                    //Close the socket and mark as 0 in list for reuse  
+                    close(UDP_FD);   
+                    csocket[i] = 0;   
+                } 
+                else //New IO
+       			{
+       				buffer[valread] = '\0';
+
+					//bzero(buffer, sizeof(buffer)); 
+	            	printf("\nMessage from UDP client: "); 
+	            	//n = recvfrom(UDP_fd, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen); 
+	            	puts(buffer); 
+        		}
+	        }
+		        
+		} 
+    }
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////// CHILD  /////////////////////////////////
+
+    ////////// File Opening /////////////
+	FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    fp = fopen(argv[4], "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+
+    sleep(1);
 	while ((read = getline(&line, &len, fp)) != -1) 
     {
         //printf("Retrieved line of length %zu:\n", read);

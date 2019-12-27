@@ -20,7 +20,6 @@ int main(int argc , char *argv[])
 {   
     char command[MSGSIZE];
     
-    char *fifo = "myfifo"; 
     if ( argc != 3 ) 
     {
         puts("Usage: rls <Port> <Number Of Children>");
@@ -248,7 +247,8 @@ void run_commands(int read_fd)
         perror ("Problem in reading.") ;
         exit(5) ;
     }
-    printf("%s\n", buff);
+    printf("Received Message: %s\n", buff);
+    fflush(stdout);
     //("THread:%d finished\n", getpid());
     //printf("%s\n",buff);
     exit(0);
