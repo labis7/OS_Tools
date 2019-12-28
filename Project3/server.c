@@ -302,14 +302,14 @@ void run_commands(int read_fd)
     //printf("Received Message: %s\n", buff);
     //fflush(stdout);
     //("THread:%d finished\n", getpid());
-    sleep(1);
+    //sleep(1);
     printf("Sending  \"%s\" via UDP!\n", command);
     if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
      {
         perror("sendto");
         exit(1);
     }
-
+    close(sock);
     /*
     if ((pipe_fp = popen(command ,"r")) == NULL )
         perror_exit("popen") ; 

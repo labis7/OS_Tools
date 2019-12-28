@@ -21,6 +21,14 @@ void perror_exit( char *message )
 	exit ( EXIT_FAILURE ) ;
 }
 
+char * name_from_address(struct in_addr addr)
+{
+	struct hostent *rem ; int asize = sizeof(addr.s_addr) ;
+	if (( rem = gethostbyaddr(&addr.s_addr , asize , AF_INET ) ) )
+		return rem -> h_name ; /* reverse lookup success */
+	return inet_ntoa(addr) ; /* fallback to a . b . c . d form */
+}
+
 /* Write () repeatedly until ’ size ’ bytes are written */
 int write_all(int fd , void *buff , size_t size )
 {
@@ -65,11 +73,6 @@ int main ( int argc , char *argv[])
 	//if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
 	//	perror_exit("fwrite");
 
-	
-
-
-	
-	
 
 
 	/*
@@ -88,113 +91,61 @@ int main ( int argc , char *argv[])
 		*/
 
 
-//////////////////////////// setup UDP ////////////////////////////////////////
+//////////////////////////// Setup & Accept UDP ////////////////////////////////////////
     
+ 	//Parent will handle it.	
+	if(fork()!=0)
+	{
+		int n , UPD_sock ; unsigned int serverlen , clientlen ;
+		char buf[256] , *clientname ;
+		struct sockaddr_in server , client ;
+		struct sockaddr *serverptr = ( struct sockaddr *)&server ;
+		struct sockaddr *clientptr = ( struct sockaddr *)&client ;
+		
 
-    if (fork() != 0) //FATHER will be accepting results
-    {
-    	printf("Father setting up\n");
-    	fflush(stdout);
-    	int opt = TRUE;   
-    	int UDP_FD , myaddrlen , activity , valread ;   
-    	int max_fd;   
-    	struct sockaddr_in myaddr,client;  
-    	struct sockaddr *myaddrptr = ( struct sockaddr *)&myaddr ; 
-    	struct sockaddr *clientptr = ( struct sockaddr *)&client ;
-        //char *clientname;
-    	char buffer[BUFFSIZE];
-
-    	fd_set rset;
-
-    	if (( UDP_FD = socket(AF_INET , SOCK_DGRAM , 0) ) < 0) // Creating UDP Socket
-			perror_exit("socket") ;
-
-    	myaddr.sin_family = AF_INET; 
-    	myaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    	myaddr.sin_port = htons(R_PORT);
-    	myaddrlen = sizeof(myaddr);
-
-    	if( setsockopt(UDP_FD, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )   
-    	{   
-        	perror("setsockopt");   
-        	exit(EXIT_FAILURE);   
-    	} 
-
-
-    	//Binding
-    	if ( bind(UDP_FD, myaddrptr , myaddrlen) < 0)
-			perror_exit("bind");
-
-		/*
-		// Discover selected port 
-		if(getsockname( sock , myaddrptr , &myaddrlen ) < 0)
+		if (( UPD_sock = socket( AF_INET , SOCK_DGRAM , 0) ) < 0)
+		perror_exit( "socket " ) ;
+		/* Bind socket to address */
+		server.sin_family = AF_INET ;
+		/* Internet domain */
+		server.sin_addr.s_addr = htonl( INADDR_ANY ) ;
+		server.sin_port = htons(8889) ;
+		/* A u t o s e l e c t a port */
+		serverlen = sizeof( server ) ;
+		if ( bind( UPD_sock , serverptr , serverlen ) < 0)
+			perror_exit( "bind " ) ;
+		/* 
+		if ( getsockname( sock , serverptr , &serverlen ) < 0)
 			perror_exit( " getsockname " ) ;
-    	
 		*/
-		socklen_t clientlen = sizeof(client);
-    	
-    	//max_fd = UDP_FD +1;
-    	while(1)
-    	{
-    		FD_ZERO(&rset);
-    		FD_SET(UDP_FD, &rset);
-    		
-    		max_fd = UDP_FD; 
-
-    		/*
-    		//add child sockets to set  
-	        for ( i = 0 ; i < max_clients ; i++)   
-	        {   
-	            //socket descriptor  
-	            UDP_FD = csocket[i];   
-	                 
-	            //if valid socket descriptor then add to read list  
-	            if(UPD_fd > 0)   
-	                FD_SET( UDP_FD , &rset);   
-	                 
-	            //highest file descriptor number, need it for the select function  
-	            if(UDP_FD > max_fd)   
-	                max_fd = UDP_fd;   
-	        }  
-			*/
-			printf("Waiting for UDP Connection. . . \n");
-    		activity = select(max_fd, &rset, NULL, NULL, NULL); 
-
-    		if ((activity < 0) && (errno!=EINTR))   
-        	{   
-            	printf("select error");   
-        	} 
-
-        	//for (i = 0; i < max_clients; i++)   
-        	//{   
-            //	UPD_fd = csocket[i]; 
-			if (FD_ISSET(UDP_FD, &rset))
-    		{
-    			bzero(buffer, sizeof(buffer)); //Clear buffer	
- 	            if ((valread = recvfrom(UDP_FD, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen)) == 0)   
-                {   
-                    //Somebody disconnected , get his details and print     
-                         
-                    //Close the socket and mark as 0 in list for reuse  
-                    close(UDP_FD);   
-                    //csocket[i] = 0;   
-                } 
-                else //New IO
-       			{
-       				buffer[valread] = '\0';
-
-					//bzero(buffer, sizeof(buffer)); 
-	            	printf("\nMessage from UDP client: "); 
-	            	//n = recvfrom(UDP_fd, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen); 
-	            	puts(buffer); 
-        		}
-	        }
-		        
-		} 
-    }
+		printf( "Socket port : %d\n" , ntohs(server.sin_port ) ) ;
+		while (1) 
+		{ 
+			clientlen = sizeof( client ) ;
+			/* Receive message */
+			if (( n = recvfrom( UPD_sock , buf , sizeof ( buf ) , 0 , clientptr , &clientlen ) ) <0)
+				perror ( " recvfrom " ) ;
+			if (n == 0)
+			{ //then close sock
+				close(sock);
+				printf("UDP Conection is now completed!\n");
+				break;
+			}
+			else
+			{
+				buf[ sizeof( buf ) -1]= '\0'; /* force str t e r m i n a t i o n */
+				/* Try to discover client ’s name */
+				clientname = name_from_address(client.sin_addr) ;
+				printf( "Received from %s : %s \n" , clientname , buf ) ;
+			}
+		}
+		wait();
+ 		return 0;
+	}
 
 
 
+ 	
 
 
 
@@ -215,7 +166,7 @@ int main ( int argc , char *argv[])
 	while ((read = getline(&line, &len, fp)) != -1) 
     {
         //printf("Retrieved line of length %zu:\n", read);
-        printf("Sending command \"%s\" via TCP . . .\n", line);
+        //printf("Sending command \"%s\" via TCP . . .\n", line);
         write_all(sock, line, read);
         //printf("%s", line);
     }
