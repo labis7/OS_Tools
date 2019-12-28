@@ -8,6 +8,7 @@
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>  
+#include <netdb.h>
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros  
      
 #define MSGSIZE 106 // 100 MAX for command      + 4 bytes int + 1 space char + 1(safety - maybe '\0')   
@@ -248,7 +249,7 @@ void run_commands(int read_fd)
     //////// UDP socket setup for transmit  /////
     int sock;
 
-    struct hostend *rem;
+    struct hostent *rem;
     struct sockaddr_in server , client ;
     unsigned int serverlen = sizeof(server) ;
     struct sockaddr *serverptr = (struct sockaddr *)&server ;
@@ -260,7 +261,7 @@ void run_commands(int read_fd)
         exit(1) ;
     }
     /* Find server ’s IP address */
-    char *sk="sk";
+    char *sk="localhost";
     if (( rem = gethostbyname(sk) ) == NULL ) 
     {
         herror( "gethostbyname" ) ;
@@ -286,16 +287,12 @@ void run_commands(int read_fd)
         exit(1);
     }
 
-    if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
-     {
-        perror("sendto");
-        exit(1);
-    }
+    
 
     /////////////////////////////////
 
 
-
+    //Children Waiting for new activity on PIPE
     //int fd = read_fd;
     if ( read(fd , command , MSGSIZE) < 0) 
     {
@@ -305,13 +302,22 @@ void run_commands(int read_fd)
     //printf("Received Message: %s\n", buff);
     //fflush(stdout);
     //("THread:%d finished\n", getpid());
+    sleep(1);
+    printf("Sending  \"%s\" via UDP!\n", command);
+    if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
+     {
+        perror("sendto");
+        exit(1);
+    }
+
+    /*
     if ((pipe_fp = popen(command ,"r")) == NULL )
         perror_exit("popen") ; 
     while ((c = getc(pipe_fp)) != EOF)
-        putc(c , sock_fp);
+        putc(c , sock);
                               
    pclose(pipe_fp);
-
+    */
 
     exit(0);
 

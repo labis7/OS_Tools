@@ -1,13 +1,19 @@
-	#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>// internet sockets
-#include <netdb.h> 	//gethostbyname
+#include <stdio.h>  
+#include <string.h>   //strlen  
+#include <stdlib.h>  
+#include <fcntl.h>
+#include <errno.h>  
+#include <unistd.h>   //close  
+#include <arpa/inet.h>    //close  
+#include <sys/types.h>  
+#include <sys/socket.h>  
+#include <netinet/in.h>  
+#include <netdb.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
 
 #define BUFFSIZE 512
+#define TRUE   1  
+#define FALSE  0  
 
 void perror_exit( char *message )
 {
@@ -30,7 +36,7 @@ int main ( int argc , char *argv[])
 {
 	struct sockaddr_in servadd ; // The address of server
 	struct hostent *hp ; // to resolve server ip
-	int sock , n_read ; // socket and message length
+	int sock; // socket and message length
 
 	if ( argc != 5 ) 
 	{
@@ -87,19 +93,20 @@ int main ( int argc , char *argv[])
 
     if (fork() != 0) //FATHER will be accepting results
     {
-
+    	printf("Father setting up\n");
+    	fflush(stdout);
     	int opt = TRUE;   
-    	int UDP_FD , myaddrlen , new_socket , csocket[30] , max_clients = 30 , activity, i , valread , sd;   
+    	int UDP_FD , myaddrlen , activity , valread ;   
     	int max_fd;   
     	struct sockaddr_in myaddr,client;  
     	struct sockaddr *myaddrptr = ( struct sockaddr *)&myaddr ; 
     	struct sockaddr *clientptr = ( struct sockaddr *)&client ;
-        char *clientname;
+        //char *clientname;
     	char buffer[BUFFSIZE];
 
     	fd_set rset;
 
-    	if (( sock = socket(AF_INET , SOCK_DGRAM , 0) ) < 0) // Creating UDP Socket
+    	if (( UDP_FD = socket(AF_INET , SOCK_DGRAM , 0) ) < 0) // Creating UDP Socket
 			perror_exit("socket") ;
 
     	myaddr.sin_family = AF_INET; 
@@ -107,7 +114,7 @@ int main ( int argc , char *argv[])
     	myaddr.sin_port = htons(R_PORT);
     	myaddrlen = sizeof(myaddr);
 
-    	if( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )   
+    	if( setsockopt(UDP_FD, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )   
     	{   
         	perror("setsockopt");   
         	exit(EXIT_FAILURE);   
@@ -115,15 +122,16 @@ int main ( int argc , char *argv[])
 
 
     	//Binding
-    	if ( bind(sock , myaddrptr , addrlen) < 0)
+    	if ( bind(UDP_FD, myaddrptr , myaddrlen) < 0)
 			perror_exit("bind");
 
+		/*
 		// Discover selected port 
-		if(getsockname( sock , serverptr , &myaddrlen ) < 0)
+		if(getsockname( sock , myaddrptr , &myaddrlen ) < 0)
 			perror_exit( " getsockname " ) ;
-    	clientlen = sizeof(client);
-
-
+    	
+		*/
+		socklen_t clientlen = sizeof(client);
     	
     	//max_fd = UDP_FD +1;
     	while(1)
@@ -131,7 +139,9 @@ int main ( int argc , char *argv[])
     		FD_ZERO(&rset);
     		FD_SET(UDP_FD, &rset);
     		
-    		max_fd = UDP_FD 
+    		max_fd = UDP_FD; 
+
+    		/*
     		//add child sockets to set  
 	        for ( i = 0 ; i < max_clients ; i++)   
 	        {   
@@ -146,7 +156,8 @@ int main ( int argc , char *argv[])
 	            if(UDP_FD > max_fd)   
 	                max_fd = UDP_fd;   
 	        }  
-			
+			*/
+			printf("Waiting for UDP Connection. . . \n");
     		activity = select(max_fd, &rset, NULL, NULL, NULL); 
 
     		if ((activity < 0) && (errno!=EINTR))   
@@ -157,16 +168,16 @@ int main ( int argc , char *argv[])
         	//for (i = 0; i < max_clients; i++)   
         	//{   
             //	UPD_fd = csocket[i]; 
-			if (FD_ISSET(UDP_fd, &rset))
+			if (FD_ISSET(UDP_FD, &rset))
     		{
-    			
- 	            if ((valread = recvfrom(UDP_fd, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen)) == 0)   
+    			bzero(buffer, sizeof(buffer)); //Clear buffer	
+ 	            if ((valread = recvfrom(UDP_FD, buffer, sizeof(buffer), 0,(struct sockaddr*)&clientptr, &clientlen)) == 0)   
                 {   
                     //Somebody disconnected , get his details and print     
                          
                     //Close the socket and mark as 0 in list for reuse  
                     close(UDP_FD);   
-                    csocket[i] = 0;   
+                    //csocket[i] = 0;   
                 } 
                 else //New IO
        			{
@@ -200,10 +211,11 @@ int main ( int argc , char *argv[])
     if (fp == NULL)
         exit(EXIT_FAILURE);
 
-    sleep(1);
+    
 	while ((read = getline(&line, &len, fp)) != -1) 
     {
         //printf("Retrieved line of length %zu:\n", read);
+        printf("Sending command \"%s\" via TCP . . .\n", line);
         write_all(sock, line, read);
         //printf("%s", line);
     }
