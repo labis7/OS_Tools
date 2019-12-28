@@ -56,7 +56,7 @@ int main(int argc , char *argv[])
     int max_sd;   
     struct sockaddr_in myaddr;   
         
-    char buffer[MSGSIZE];  //data buffer of 1K  
+    char buffer[MSGSIZE], comm[MSGSIZE];  //data buffer of 1K  
 
     //set of socket descriptors  
     fd_set read_fd_set;   
@@ -203,26 +203,71 @@ int main(int argc , char *argv[])
                 //Echo back the message that came in  
                 else 
                 {   
-                    //char *line = NULL;
-                    //size_t len = 0;
-                    //ssize_t read;
 
                     //set the string terminating NULL byte on the end  
                     //of the data read  
                     buffer[valread] = '\0';  
                     //getline(&line, &len, buffer);
                     //printf("New IO activity!:");
+
+
+
                     char *ptr = strtok(buffer,"\n");
-                    while(ptr != NULL){
-                        //printf("New Command: %s",ptr);
-                        //printf("\n");
-                        //snprintf(command, MSGSIZE ,"8889 %s", ptr);
-                        //printf("Size of the final command:%d ,ptr size : %d\n",strlen(command),strlen(ptr));
-                        strcpy(command,"8889 ");
-                        strcat(command, ptr);
+                    while(ptr != NULL){ //Break down possible 2-3 line commands
+                        bzero(command,sizeof(command));
+                        bzero(comm,sizeof(comm));
+                        
+
+                        //Individual commands(including possible pipeline)
+                        char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
+                        if(strstr(ptr1," | ")){    
+                            //Commands Without pipeline
+                            char *ptr2 = strtok(ptr1, "|");
+                            while(ptr2 != NULL)
+                            {
+                                //printf("Checking %s\n",ptr2 );
+                                //if the command is in the list of the 5 AND if its able to run 
+                                if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
+                                {
+                                    strcpy(command, ptr2);
+                                }
+                                else
+                                {
+                                    strcpy(command, "\0");
+                                    break;
+                                }
+                                ptr2 = strtok(NULL,"|");
+                                if(ptr2 != NULL)//if there is more, add the missing pipe
+                                    strcpy(command, " | ");
+                            }
+                        }
+                        else
+                        {
+                             if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
+                                {
+                                    strcpy(command, ptr1);
+                                }
+                                else
+                                {
+                                    strcpy(command, "\0");//See error below
+                                    break;
+                                }
+                        }                        
+                        
+                        if(!(strlen(command)>2))
+                            strcpy(comm,"Error: 127");
+                        else
+                        {
+                            strcpy(comm,"localhost:8889 ");
+                            strcpy(comm, command);
+                        }
+                        
+
+                        
+                        //strcat(comm, ptr);
                         
                         
-                        if (write(fd[1] , command, MSGSIZE) == -1)
+                        if (write(fd[1] , comm, MSGSIZE) == -1)
                         {    perror("Error in Writing"); 
                              exit(2) ;
                         } 

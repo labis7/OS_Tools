@@ -167,7 +167,8 @@ int main ( int argc , char *argv[])
     {
         //printf("Retrieved line of length %zu:\n", read);
         //printf("Sending command \"%s\" via TCP . . .\n", line);
-        write_all(sock, line, read);
+        sleep(0.1);   ///////////////////////////////////////////IMPORTANT #TODO:Find the reason//
+        write(sock, line, read);
         //printf("%s", line);
     }
 
