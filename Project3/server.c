@@ -59,7 +59,7 @@ int main(int argc , char *argv[])
     char buffer[MSGSIZE], comm[MSGSIZE];  //data buffer of 1K  
 
     //set of socket descriptors  
-    fd_set read_fd_set;   
+    fd_set read_fd_set,active_fd_set;   
          
     //a message  
     char *message = "ECHO Daemon v1.0 \r\n";   
@@ -109,7 +109,8 @@ int main(int argc , char *argv[])
     //accept the incoming connection  
     addrlen = sizeof(myaddr);   
     puts("Waiting for connections ...");   
-         
+    FILE *pipe_fp;
+
     while(1)   
     {   
         //clear the socket set  
@@ -214,66 +215,8 @@ int main(int argc , char *argv[])
                     //sleep(1) fix this
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){ //Break down possible 2-3 line commands
-                        bzero(command,sizeof(command));
-                        bzero(comm,sizeof(comm));
                         
-
-                        //Individual commands(including possible pipeline)
-                        char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
-                        if(strstr(ptr1," | ")){    
-                            //Commands Without pipeline
-                            char *ptr2 = strtok(ptr1, "|");
-                            while(ptr2 != NULL)
-                            {
-                                //printf("Checking %s\n",ptr2 );
-                                //if the command is in the list of the 5 AND if its able to run 
-                                if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
-                                {
-                                    strcat(command, ptr2);
-                                }
-                                else
-                                {
-                                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
-                                        command[strlen(command)-2]='\0';
-                                    else
-                                        strcat(command, "\0");
-                                    break;
-                                }
-                                ptr2 = strtok(NULL,"|");
-                                if(ptr2 != NULL)//if there is more, add the missing pipe
-                                    strcat(command, "|");
-                            }
-                        }
-                        else
-                        {
-                             if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
-                                {
-                                    strcpy(command, ptr1);
-                                }
-                                else
-                                {
-                                    
-                                    strcpy(command, "\0");//See error below
-                                }
-                        }                        
-                        
-
-                        if(!(strlen(command)>2))
-                        {
-
-                            strcpy(comm,"Error: 127");
-                        }
-                        else
-                        {
-                            strcpy(comm,"localhost:8889 ");
-                            strcat(comm, command);
-                        }
-                        
-
-                        
-                        //strcat(comm, ptr);
-                        
-                        
+                        strcpy(comm, ptr );
                         if (write(fd[1] , comm, MSGSIZE) == -1)
                         {    perror("Error in Writing"); 
                              exit(2) ;
@@ -295,7 +238,7 @@ void run_commands(int read_fd)
 {
     FILE *pipe_fp;
     int fd = read_fd;
-    char command[MSGSIZE];
+    char command[MSGSIZE],comm[MSGSIZE];
 
 
     //////// UDP socket setup for transmit  /////
@@ -355,6 +298,110 @@ void run_commands(int read_fd)
     //fflush(stdout);
     //("THread:%d finished\n", getpid());
     //sleep(1);
+    /*
+    char ptr;
+    strcpy(ptr,command);
+    bzero(command,sizeof(command));
+
+    char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
+    if(strstr(ptr1," | ")){    
+        //Commands Without pipeline
+        char *ptr2 = strtok(ptr1, "|");
+        while(ptr2 != NULL)
+        {
+            //printf("Checking %s\n",ptr2 );
+            //if the command is in the list of the 5 AND if its able to run 
+            if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
+            {
+                if((pipe_fp = popen(ptr2,"r")) == NULL)
+                {
+                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                        command[strlen(command)-2]='\0';
+                    else
+                        strcat(command, "\0");
+                    break;
+                }    
+                //or..even..
+                //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
+                if((pipe_fp = popen(ptr2,"r")) == NULL)
+                {
+                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                        command[strlen(command)-2]='\0';
+                    else
+                        strcat(command, "\0");
+                    break;
+                }
+
+
+                //ELSE
+                strcat(command, ptr2);//Keep the command and move on.
+                
+            }
+            else
+            {
+                if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                    command[strlen(command)-2]='\0';//delete the "|" that was put before
+                else
+                    strcat(command, "\0");
+                break;
+            }
+            ptr2 = strtok(NULL,"|");
+            if(ptr2 != NULL)//if there is more, add the missing pipe
+                strcat(command, "|");
+        }
+    }
+    else
+    {
+         if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
+            {
+
+                strcpy(command, ptr1);
+
+                ///ELSE
+
+                if((pipe_fp = popen(ptr1,"r")) == NULL)
+                        strcpy(command, "\0"); 
+                //or..even..
+                //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
+                if(pclose(pipe_fp) == -1)
+                        strcpy(command, "\0");
+                
+            }
+            else
+            {
+                
+                strcpy(command, "\0");//See error below
+            }
+    }                        
+    
+
+    if(!(strlen(command)>2))
+    {
+
+        strcpy(comm,"Error: 127");
+    }
+    else
+    {
+        strcpy(comm,"localhost:8889 ");
+        strcat(comm, command);
+    }
+    
+
+    
+    //strcat(comm, ptr);
+    
+    
+    if (write(fd[1] , comm, MSGSIZE) == -1)
+    {    perror("Error in Writing"); 
+         exit(2) ;
+    } 
+    
+    //send(sd , buffer , strlen(buffer) , 0 );   
+    ptr = strtok(NULL,"\n");
+
+    */
+
+
     printf("Sending  \"%s\" via UDP!\n", command);
     if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
      {
