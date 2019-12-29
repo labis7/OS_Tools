@@ -211,7 +211,7 @@ int main(int argc , char *argv[])
                     //printf("New IO activity!:");
 
 
-
+                    //sleep(1) fix this
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){ //Break down possible 2-3 line commands
                         bzero(command,sizeof(command));
@@ -229,16 +229,19 @@ int main(int argc , char *argv[])
                                 //if the command is in the list of the 5 AND if its able to run 
                                 if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
                                 {
-                                    strcpy(command, ptr2);
+                                    strcat(command, ptr2);
                                 }
                                 else
                                 {
-                                    strcpy(command, "\0");
+                                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                                        command[strlen(command)-2]='\0';
+                                    else
+                                        strcat(command, "\0");
                                     break;
                                 }
                                 ptr2 = strtok(NULL,"|");
                                 if(ptr2 != NULL)//if there is more, add the missing pipe
-                                    strcpy(command, " | ");
+                                    strcat(command, "|");
                             }
                         }
                         else
@@ -249,17 +252,21 @@ int main(int argc , char *argv[])
                                 }
                                 else
                                 {
+                                    
                                     strcpy(command, "\0");//See error below
-                                    break;
                                 }
                         }                        
                         
+
                         if(!(strlen(command)>2))
+                        {
+
                             strcpy(comm,"Error: 127");
+                        }
                         else
                         {
                             strcpy(comm,"localhost:8889 ");
-                            strcpy(comm, command);
+                            strcat(comm, command);
                         }
                         
 
