@@ -238,7 +238,7 @@ void run_commands(int read_fd)
 {
     FILE *pipe_fp;
     int fd = read_fd;
-    char command[MSGSIZE],comm[MSGSIZE];
+    char command[MSGSIZE],fresult[MSGSIZE];
 
 
     //////// UDP socket setup for transmit  /////
@@ -304,6 +304,8 @@ void run_commands(int read_fd)
     bzero(command,sizeof(command));
     //printf("Reading from pipe the command:%s\n",ptr );
     
+    char temp[32];
+    char result[512]={0x0};
     char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
     if(strstr(ptr1," | ")){    
         //Commands Without pipeline
@@ -356,30 +358,26 @@ void run_commands(int read_fd)
          if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
             {
 
-                strcpy(command, ptr1);
-
-                ///ELSE
 
                 if((pipe_fp = popen(ptr1,"r")) == NULL)
-                    strcpy(command, "\0"); 
+                    strcpy(result, "\0"); 
                
-                char temp[32];
-                char result[512]={0x0};
+                
                 while (fgets(temp, sizeof(temp), pipe_fp) != NULL)
                 {
                     strcat(result, temp);
                 }
                 
-                printf("%s\n", result);
+                //printf("%s\n", result);
 
                 //printf("popen returns: %s\n", result);
                 //or..even..
                 //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
                 int c;
-                c=pclose(pipe_fp);
+                c = pclose(pipe_fp);
                 if(c > 0)
                 {    
-                    strcpy(command, "\0");   
+                    strcpy(result, "\0");   
                 }
                 
                 
@@ -387,17 +385,17 @@ void run_commands(int read_fd)
             else
             {
                 
-                strcpy(command, "\0");//See error below
+                strcpy(result, "\0");//See error below
             }
     }                        
     
 
-    if(!(strlen(command)>2))
-        strcpy(comm,"Error");
+    if(!(strlen(result)>2))
+        strcpy(fresult,"Error");
     else
     {
-        strcpy(comm,"localhost:8889 ");
-        strcat(comm, command);
+        strcpy(fresult,"localhost:8889 ");
+        strcat(fresult, result);
     }
     
       
@@ -405,8 +403,8 @@ void run_commands(int read_fd)
     
 
 
-    printf("Sending  \"%s\" via UDP!\n", comm);
-    if ( sendto( sock , comm , strlen(comm)+1 , 0 , serverptr , serverlen ) < 0)
+    //printf("Sending  \"%s\" via UDP!\n", fresult);
+    if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
      {
         perror("sendto");
         exit(1);
