@@ -190,7 +190,7 @@ int main(int argc , char *argv[])
             {   
                 //Check if it was for closing , and also read the  
                 //incoming message  
-                if ((valread = read( sd , buffer, 1024)) == 0)   
+                if ((valread = read( sd , buffer, 512)) == 0)   
                 {   
                     //Somebody disconnected , get his details and print  
                     getpeername(sd , (struct sockaddr*)&myaddr ,(socklen_t*)&addrlen);   
@@ -268,7 +268,9 @@ void run_commands(int read_fd)
     server.sin_family = AF_INET ;
     // Internet domain 
     memcpy(&server.sin_addr , rem -> h_addr , rem -> h_length ) ;
-    server.sin_port = htons(8889) ;
+    
+    //PORT WILL BE completed later
+
     // Setup my address 
     client.sin_family = AF_INET ;
     // Internet domain 
@@ -298,15 +300,34 @@ void run_commands(int read_fd)
     //fflush(stdout);
     //("THread:%d finished\n", getpid());
     //sleep(1);
-    
-    char ptr[MSGSIZE];
-    strcpy(ptr,command);
+    char tmpcomm[MSGSIZE];
+    strcpy(tmpcomm,command);
     bzero(command,sizeof(command));
+
+    char *ptr;
     //printf("Reading from pipe the command:%s\n",ptr );
+    char *info = strtok(tmpcomm,";"); //tmpcomm must be kept intact!!! There are many ptrs on that string.
+    ptr = strtok(NULL,";"); //Now take the actual command
+
+    //take the info
+    char *inf = strtok(info," ");
+    char S_PORT[5],num[5];
+    strcpy(num,inf);
+    inf = strtok(NULL," ");
+    strcpy(S_PORT,inf);
+    server.sin_port = htons(atoi(S_PORT)) ;
+    //
+
+       
+    //printf("Received Port:%s  Line Num:%s  Command:%s \n",S_PORT,num,ptr );
+    
     
     char temp[32];
     char result[512]={0x0};
+    //Choose only the first Command(including Pipes)
     char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
+    
+    
     if(strstr(ptr1," | ")){    
         //Commands Without pipeline
         char *ptr2 = strtok(ptr1, "|");
@@ -363,8 +384,21 @@ void run_commands(int read_fd)
                     strcpy(result, "\0"); 
                
                 
-                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)
+                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
                 {
+                    if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
+                    {
+                        strcpy(fresult,num);//First line : INFO
+                        strcat(fresult,"\n");
+                        strcat(fresult,result);//The rest lines are results
+                        printf("Sending:%s\n",fresult );
+                        if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+                        {
+                            perror("sendto");
+                            exit(1);
+                        }
+                        bzero(result,sizeof(result));
+                    }
                     strcat(result, temp);
                 }
                 
@@ -390,18 +424,21 @@ void run_commands(int read_fd)
     }                        
     
 
+    //if(strlen(ptr)>100) --> Ignore
+
     if(!(strlen(result)>2))
         strcpy(fresult,"Error");
     else
     {
-        strcpy(fresult,"localhost:8889 ");
+        strcpy(fresult, num);
+        strcat(fresult,"\n");
         strcat(fresult, result);
     }
     
       
 
     
-
+    printf("Sending:%s\n",fresult );
 
     //printf("Sending  \"%s\" via UDP!\n", fresult);
     if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)

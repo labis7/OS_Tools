@@ -97,7 +97,7 @@ int main ( int argc , char *argv[])
 	if(fork()!=0)
 	{
 		int n , UPD_sock ; unsigned int serverlen , clientlen ;
-		char buf[256] , *clientname ;
+		char buf[512] , *clientname ;
 		struct sockaddr_in server , client ;
 		struct sockaddr *serverptr = ( struct sockaddr *)&server ;
 		struct sockaddr *clientptr = ( struct sockaddr *)&client ;
@@ -162,17 +162,24 @@ int main ( int argc , char *argv[])
     if (fp == NULL)
         exit(EXIT_FAILURE);
 
-    
+    int i = 0;
 	while ((read = getline(&line, &len, fp)) != -1) 
     {
+    	i++;
         //printf("Retrieved line of length %zu:\n", read);
         //printf("Sending command \"%s\" via TCP . . .\n", line);
         sleep(0.1);   ///////////////////////////////////////////IMPORTANT #TODO:Find the reason//
-        write(sock, line, read);
+        char temp[105]={0x0};
+        //strcpy(temp)
+        snprintf(temp,105,"%d %d;%s",i,R_PORT,line);
+        bzero(line,sizeof(line));
+        snprintf(line,strlen(temp),"%s",temp);
+        //printf("Sending %s, size:%d\n",line ,strlen(line) );
+        write_all(sock, line , strlen(line));
         //printf("%s", line);
     }
 
-
+    sleep(0.1);//Wait before closing
 	fclose(fp);
 	if (line)
        	free(line);
