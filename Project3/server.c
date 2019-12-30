@@ -337,37 +337,71 @@ void run_commands(int read_fd)
             //if the command is in the list of the 5 AND if its able to run 
             if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
             {
-                if((pipe_fp = popen(ptr2,"r")) == NULL)
+                pipe_fp = popen(ptr2,"r");             
+                if(pclose(pipe_fp)>0) //means error 
                 {
-                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
-                        command[strlen(command)-2]='\0';
-                    else
-                        strcat(command, "\0");
-                    break;
-                }    
-                //or..even..
-                //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
-                if((pipe_fp = popen(ptr2,"r")) == NULL)
-                {
-                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
-                        command[strlen(command)-2]='\0';
-                    else
-                        strcat(command, "\0");
-                    break;
-                }
+                   if(strlen(command)>2)     //but there are some commands before that.
+                   {
+                        command[strlen(command)-2]='\0'; //remove the extra pipe and run
+                        ////////////////////////// EXECUTE & SEND ////////////////////////////////
+                        while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+                        {
+                            if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
+                            {
+                                strcpy(fresult,num);//First line : INFO
+                                strcat(fresult,"\n");
+                                strcat(fresult,result);//The rest lines are results
+                                printf("Sending:%s\n",fresult );
+                                if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+                                {
+                                    perror("sendto");
+                                    exit(1);
+                                }
+                                bzero(result,sizeof(result));
+                            }
+                            strcat(result, temp);// The rest of the data will be sent after the big IF
+                        }
+                        //////////////////////////////////////////////////////////////////////
+                        break; 
+                   }
+                   else
+                        break;// means that it fails from the start
+                } 
 
 
                 //ELSE
                 strcat(command, ptr2);//Keep the command and move on.
-                
+                strcat(command, "|")
             }
             else
             {
-                if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                if(strlen(command)>2)
+                { ///This the only case where the command after pipe is wrong
                     command[strlen(command)-2]='\0';//delete the "|" that was put before
+                   
+                    ////////////////////////// EXECUTE & SEND ////////////////////////////////
+                    while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+                    {
+                        if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
+                        {
+                            strcpy(fresult,num);//First line : INFO
+                            strcat(fresult,"\n");
+                            strcat(fresult,result);//The rest lines are results
+                            printf("Sending:%s\n",fresult );
+                            if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+                            {
+                                perror("sendto");
+                                exit(1);
+                            }
+                            bzero(result,sizeof(result));
+                        }
+                        strcat(result, temp);//the rest of the data will be sent after the big IF
+                    }
+                    ///////////////////////////////////////////////////////////////////////////
+
+                }
                 else
-                    strcat(command, "\0");
-                break;
+                    break;
             }
             ptr2 = strtok(NULL,"|");
             if(ptr2 != NULL)//if there is more, add the missing pipe
@@ -383,7 +417,7 @@ void run_commands(int read_fd)
                 if((pipe_fp = popen(ptr1,"r")) == NULL)
                     strcpy(result, "\0"); 
                
-                
+                ////////////////////////// EXECUTE & SEND ////////////////////////////////
                 while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
                 {
                     if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
@@ -401,7 +435,7 @@ void run_commands(int read_fd)
                     }
                     strcat(result, temp);
                 }
-                
+                ////////////////////////////////////////////////////////////////////////////
                 //printf("%s\n", result);
 
                 //printf("popen returns: %s\n", result);
