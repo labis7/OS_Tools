@@ -19,7 +19,7 @@ void run_commands(int read_fd);
      
 int main(int argc , char *argv[])   
 {   
-    char command[MSGSIZE];
+    //char command[MSGSIZE];
     
     if ( argc != 3 ) 
     {
@@ -59,10 +59,10 @@ int main(int argc , char *argv[])
     char buffer[MSGSIZE], comm[MSGSIZE];  //data buffer of 1K  
 
     //set of socket descriptors  
-    fd_set read_fd_set,active_fd_set;   
+    fd_set read_fd_set;   
          
     //a message  
-    char *message = "ECHO Daemon v1.0 \r\n";   
+    //char *message = "ECHO Daemon v1.0 \r\n";   
      
     //initialise all csocket[] to 0 so not checked  
     for (i = 0; i < max_clients; i++)   
@@ -109,7 +109,7 @@ int main(int argc , char *argv[])
     //accept the incoming connection  
     addrlen = sizeof(myaddr);   
     puts("Waiting for connections ...");   
-    FILE *pipe_fp;
+    //FILE *pipe_fp;
 
     while(1)   
     {   
@@ -215,7 +215,7 @@ int main(int argc , char *argv[])
                     //sleep(1) fix this
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){ //Break down possible 2-3 line commands
-                        
+                        //printf("Sending to Pipe the command:%s\n", ptr);
                         strcpy(comm, ptr );
                         if (write(fd[1] , comm, MSGSIZE) == -1)
                         {    perror("Error in Writing"); 
@@ -298,11 +298,12 @@ void run_commands(int read_fd)
     //fflush(stdout);
     //("THread:%d finished\n", getpid());
     //sleep(1);
-    /*
-    char ptr;
+    
+    char ptr[MSGSIZE];
     strcpy(ptr,command);
     bzero(command,sizeof(command));
-
+    //printf("Reading from pipe the command:%s\n",ptr );
+    
     char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
     if(strstr(ptr1," | ")){    
         //Commands Without pipeline
@@ -350,7 +351,7 @@ void run_commands(int read_fd)
                 strcat(command, "|");
         }
     }
-    else
+    else //No pipe
     {
          if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
             {
@@ -360,11 +361,27 @@ void run_commands(int read_fd)
                 ///ELSE
 
                 if((pipe_fp = popen(ptr1,"r")) == NULL)
-                        strcpy(command, "\0"); 
+                    strcpy(command, "\0"); 
+               
+                char temp[32];
+                char result[512]={0x0};
+                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)
+                {
+                    strcat(result, temp);
+                }
+                
+                printf("%s\n", result);
+
+                //printf("popen returns: %s\n", result);
                 //or..even..
                 //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
-                if(pclose(pipe_fp) == -1)
-                        strcpy(command, "\0");
+                int c;
+                c=pclose(pipe_fp);
+                if(c > 0)
+                {    
+                    strcpy(command, "\0");   
+                }
+                
                 
             }
             else
@@ -376,34 +393,20 @@ void run_commands(int read_fd)
     
 
     if(!(strlen(command)>2))
-    {
-
-        strcpy(comm,"Error: 127");
-    }
+        strcpy(comm,"Error");
     else
     {
         strcpy(comm,"localhost:8889 ");
         strcat(comm, command);
     }
     
+      
 
     
-    //strcat(comm, ptr);
-    
-    
-    if (write(fd[1] , comm, MSGSIZE) == -1)
-    {    perror("Error in Writing"); 
-         exit(2) ;
-    } 
-    
-    //send(sd , buffer , strlen(buffer) , 0 );   
-    ptr = strtok(NULL,"\n");
-
-    */
 
 
-    printf("Sending  \"%s\" via UDP!\n", command);
-    if ( sendto( sock , command , strlen(command)+1 , 0 , serverptr , serverlen ) < 0)
+    printf("Sending  \"%s\" via UDP!\n", comm);
+    if ( sendto( sock , comm , strlen(comm)+1 , 0 , serverptr , serverlen ) < 0)
      {
         perror("sendto");
         exit(1);
