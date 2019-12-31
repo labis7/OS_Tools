@@ -215,7 +215,7 @@ int main(int argc , char *argv[])
                     //sleep(1) fix this
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){ //Break down possible 2-3 line commands
-                        printf("Sending to Pipe the command:%s\n", ptr);
+                        //printf("Sending to Pipe the command:%s\n", ptr);
                         strcpy(comm, ptr );
                         if (write(fd[1] , comm, MSGSIZE) == -1)
                         {    perror("Error in Writing"); 
@@ -327,17 +327,19 @@ void run_commands(int read_fd)
     //Choose only the first Command(including Pipes)
     char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
     
-    
+    char tempcomm[MSGSIZE]={0x0};
     if(strstr(ptr1,"|")){    //Warning! NOT SAFE
         //Commands Without pipeline
         char *ptr2 = strtok(ptr1, "|"); //Warning! NOT SAFE
         while(ptr2 != NULL)
         {
-            //printf("Checking %s\n",ptr2 );
             //if the command is in the list of the 5 AND if its able to run 
             if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
             {
-                pipe_fp = popen(ptr2,"r");    
+                //run the command until here
+                strcat(tempcomm, ptr2);
+                pipe_fp = popen(tempcomm,"r");  
+                printf("Testing Command:%s\n", tempcomm);  
                 while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
                     ;         
                 if(pclose(pipe_fp)>0) //means error 
@@ -345,25 +347,23 @@ void run_commands(int read_fd)
                    if(strlen(command)>2)     //but there are some commands before that.
                    {
                         command[strlen(command)-2]='\0'; //remove the extra pipe and run
-                        pipe_fp = popen(ptr2,"r"); 
                         break; 
                    }
                    else
                         break;// means that it fails from the start
                 } 
 
-
+                //printf("\n%s Passed Succesfully\n", tempcomm);
                 //ELSE
                 strcat(command, ptr2);//Keep the command and move on.
-                strcat(command, "|");
+                //strcat(command, "|");
+                //for the next iteration
+                strcat(tempcomm, "|");
             }
             else
             {
-                if(strlen(command)>2)
-                { ///This the only case where the command after pipe is wrong
+                if(strlen(command)>2) ///This the only case where the command after pipe is wrong
                     command[strlen(command)-2]='\0';//delete the "|" that was put before
-                    pipe_fp = popen(ptr2,"r"); 
-                }
                 else
                     break;
             }
@@ -383,17 +383,16 @@ void run_commands(int read_fd)
             //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
             if( pclose(pipe_fp) > 0) 
                 strcpy(command, "\0"); //Not needed
-            else{
-               strcpy(command, ptr1);
-               pipe_fp = popen(ptr1,"r");        
-            }
+            else
+               strcpy(command, ptr1);        
         }
         else            
             strcpy(command, "\0");//See error below
     }                        
     
-
-    //First line is standard
+    //Re-open it for the final read
+    pipe_fp = popen(command,"r");
+    
 
 
     if((!(strlen(command)>2))||(strlen(command)>100))
