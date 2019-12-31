@@ -427,7 +427,7 @@ void run_commands(int read_fd)
         strcat(fresult, result);  
 
         
-        //printf("Sending:\n%s\n",fresult );
+        //printf("Sending:%s\n",fresult );
 
         //printf("Sending  \"%s\" via UDP!\n", fresult);
         if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)

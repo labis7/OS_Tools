@@ -136,13 +136,17 @@ int main ( int argc , char *argv[])
 				buf[ sizeof( buf ) -1]= '\0'; /* force str t e r m i n a t i o n */
 				/* Try to discover client ’s name */
 				clientname = name_from_address(client.sin_addr) ;
-				printf( "Received from %s : %s \n" , clientname , buf ) ;
+				//printf( "Received from %s : %s \n" , clientname , buf ) ;
+				char buffer[512];
+				strcpy(buffer,buf);
 				char *ptr = strtok(buf, "\n");
 				int filenum = atoi(ptr);
 				char filename[128];
 				sprintf(filename,"output.%s.%d",argv[3],filenum);
 				ptr = strtok(NULL,"\n");
-
+				char *position=strstr(buffer,"\n");
+				int pos = position - buffer;
+				printf("Buffer:%s\n", buffer+pos+1);//+1 is the new line('\n')
 				FILE *fileptr=fopen(filename,"a");
 				if(fileptr == NULL)
 			    {
@@ -150,16 +154,35 @@ int main ( int argc , char *argv[])
 			        printf("Unable to create file.\n");
 			        exit(EXIT_FAILURE);
 			    }
-
-			    if(strcmp(ptr, "ERROR")==0)
+			    //ptr is the result(or just part of it)
+			    if(strcmp(ptr, "Error\0")==0)
+			    {
 					//write empty file
+					fprintf( fileptr, "\0");
+			    }
+
 				else
-			    	fputs(ptr, fileptr);
+				{	
+					fprintf(fileptr, buffer+pos+1);
+					/*
+					int init=0;
+					while(ptr!=NULL)
+					{
+						
+						if(init == 0)
+						{
+							init=1;
+							fprintf(fileptr, ptr);
+							ptr = strtok(NULL,"\n");
+							continue;
+						}
+						fprintf(fileptr, "\n");
+			    		fprintf(fileptr, ptr);
+			    		ptr = strtok(NULL,"\n");
+					}
+					*/
+			    }
 			    fclose(fileptr);
-
-				//printf("\nFinal output file name: %s\n",filename);
-				//if(strcmp(ptr, "ERROR")==0)
-					//write empty file
 			}
 		}
 		//wait();
