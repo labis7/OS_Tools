@@ -238,7 +238,7 @@ void run_commands(int read_fd)
 {
     FILE *pipe_fp;
     int fd = read_fd;
-    char command[MSGSIZE],fresult[MSGSIZE];
+    char command[MSGSIZE];
 
 
     //////// UDP socket setup for transmit  /////
@@ -288,152 +288,157 @@ void run_commands(int read_fd)
 
     /////////////////////////////////
 
-
-    //Children Waiting for new activity on PIPE
-    //int fd = read_fd;
-    if ( read(fd , command , MSGSIZE) < 0) 
+    while(1)
     {
-        perror ("Problem in reading.") ;
-        exit(5) ;
-    }
-    //printf("Received Message: %s\n", buff);
-    //fflush(stdout);
-    //("THread:%d finished\n", getpid());
-    //sleep(1);
-    char tmpcomm[MSGSIZE];
-    strcpy(tmpcomm,command);
-    bzero(command,sizeof(command));
-
-    char *ptr;
-    //printf("Reading from pipe the command:%s\n",ptr );
-    char *info = strtok(tmpcomm,";"); //tmpcomm must be kept intact!!! There are many ptrs on that string.
-    ptr = strtok(NULL,";"); //Now take the actual command
-
-    //take the info
-    char *inf = strtok(info," ");
-    char S_PORT[5],num[5];
-    strcpy(num,inf);
-    inf = strtok(NULL," ");
-    strcpy(S_PORT,inf);
-    server.sin_port = htons(atoi(S_PORT)) ;
-    //
-
-       
-    //printf("Received Port:%s  Line Num:%s  Command:%s \n",S_PORT,num,ptr );
-    
-    
-    char temp[32];
-    char result[512]={0x0};
-    //Choose only the first Command(including Pipes)
-    char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
-    
-    char tempcomm[MSGSIZE]={0x0};
-    if(strstr(ptr1,"|")){    //Warning! NOT SAFE
-        //Commands Without pipeline
-        char *ptr2 = strtok(ptr1, "|"); //Warning! NOT SAFE
-        while(ptr2 != NULL)
+        //Children Waiting for new activity on PIPE
+        //int fd = read_fd;
+        if ( read(fd , command , MSGSIZE) < 0) 
         {
-            //if the command is in the list of the 5 AND if its able to run 
-            if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
-            {
-                //run the command until here
-                strcat(tempcomm, ptr2);
-                pipe_fp = popen(tempcomm,"r");  
-                printf("Testing Command:%s\n", tempcomm);  
-                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
-                    ;         
-                if(pclose(pipe_fp)>0) //means error 
-                {
-                   if(strlen(command)>2)     //but there are some commands before that.
-                   {
-                        command[strlen(command)-2]='\0'; //remove the extra pipe and run
-                        break; 
-                   }
-                   else
-                        break;// means that it fails from the start
-                } 
-
-                //printf("\n%s Passed Succesfully\n", tempcomm);
-                //ELSE
-                strcat(command, ptr2);//Keep the command and move on.
-                //strcat(command, "|");
-                //for the next iteration
-                strcat(tempcomm, "|");
-            }
-            else
-            {
-                if(strlen(command)>2) ///This the only case where the command after pipe is wrong
-                    command[strlen(command)-2]='\0';//delete the "|" that was put before
-                else
-                    break;
-            }
-            ptr2 = strtok(NULL,"|");
-            if(ptr2 != NULL)//if there is more, add the missing pipe
-                strcat(command, "|");
+            perror ("Problem in reading.") ;
+            exit(5) ;
         }
-    }
-    else //No pipe
-    {
-        if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
-        {
-            pipe_fp = popen(ptr1,"r");
-             
-            while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
-                ;    
-            //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
-            if( pclose(pipe_fp) > 0) 
-                strcpy(command, "\0"); //Not needed
-            else
-               strcpy(command, ptr1);        
-        }
-        else            
-            strcpy(command, "\0");//See error below
-    }                        
-    
-    //Re-open it for the final read
-    pipe_fp = popen(command,"r");
-    
+        //printf("Received Message: %s\n", buff);
+        //fflush(stdout);
+        //("THread:%d finished\n", getpid());
+        //sleep(1);
+        char tmpcomm[MSGSIZE];
+        strcpy(tmpcomm,command);
+        bzero(command,sizeof(command));
 
+        char *ptr;
+        //printf("Reading from pipe the command:%s\n",ptr );
+        char *info = strtok(tmpcomm,";"); //tmpcomm must be kept intact!!! There are many ptrs on that string.
+        ptr = strtok(NULL,";"); //Now take the actual command
 
-    if((!(strlen(command)>2))||(strlen(command)>100))
-        strcpy(result,"Error");
-    else
-    {
-        ////////////////////////// EXECUTE & SEND ////////////////////////////////
-        while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
-        {
-            if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
+        //take the info
+        char *inf = strtok(info," ");
+        char S_PORT[5],num[5];
+        strcpy(num,inf);
+        inf = strtok(NULL," ");
+        strcpy(S_PORT,inf);
+        server.sin_port = htons(atoi(S_PORT)) ;
+        //
+
+           
+        //printf("Received Port:%s  Line Num:%s  Command:%s \n",S_PORT,num,ptr );
+        
+        
+        char temp[32];
+        char fresult[512],result[512]={0x0};
+        //Choose only the first Command(including Pipes)
+        char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
+        
+        char tempcomm[MSGSIZE]={0x0};
+        if(strstr(ptr1,"|")){    //Warning! NOT SAFE
+            //Commands Without pipeline
+            char *ptr2 = strtok(ptr1, "|"); //Warning! NOT SAFE
+            while(ptr2 != NULL)
             {
-                strcpy(fresult,num);//First line : INFO
-                strcat(fresult,"\n");
-                strcat(fresult,result);//The rest lines are results
-                //printf("Sending:%s\n",fresult );
-                if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+                //if the command is in the list of the 5 AND if its able to run 
+                if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
                 {
-                    perror("sendto");
-                    exit(1);
+                    //run the command until here
+                    strcat(tempcomm, ptr2);
+                    pipe_fp = popen(tempcomm,"r");  
+                    //printf("Testing Command:%s\n", tempcomm);  
+                    while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+                        ;         
+                    if(pclose(pipe_fp)>0) //means error 
+                    {
+                       if(strlen(command)>2)     //but there are some commands before that.
+                       {
+                            command[strlen(command)-2]='\0'; //remove the extra pipe and run
+                            break; 
+                       }
+                       else
+                            break;// means that it fails from the start
+                    } 
+
+                    //printf("\n%s Passed Succesfully\n", tempcomm);
+                    //ELSE
+                    strcat(command, ptr2);//Keep the command and move on.
+                    //strcat(command, "|");
+                    //for the next iteration
+                    strcat(tempcomm, "|");
                 }
-                bzero(result,sizeof(result));
+                else
+                {
+                    if(strlen(command)>2) ///This the only case where the command after pipe is wrong
+                        command[strlen(command)-2]='\0';//delete the "|" that was put before
+                    else
+                        break;
+                }
+                ptr2 = strtok(NULL,"|");
+                if(ptr2 != NULL)//if there is more, add the missing pipe
+                    strcat(command, "|");
             }
-            strcat(result, temp);
         }
-        ////////////////////////////////////////////////////////////////////////////
-    }
-    pclose(pipe_fp);
-    
-    strcpy(fresult, num);
-    strcat(fresult,"\n");
-    strcat(fresult, result);  
+        else //No pipe
+        {
+            if((strstr(ptr1, "ls") != NULL)||(strstr(ptr1, "cat") != NULL)||(strstr(ptr1, "cut") != NULL)||(strstr(ptr1, "grep") != NULL)||(strstr(ptr1, "tr") != NULL))
+            {
+                pipe_fp = popen(ptr1,"r");
+                 
+                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+                    ;    
+                //The pclose() function returns -1 if wait4 returns an error, or some other error is detected.
+                if( pclose(pipe_fp) > 0) 
+                    strcpy(command, "\0"); //Not needed
+                else
+                   strcpy(command, ptr1);        
+            }
+            else            
+                strcpy(command, "\0");//See error below
+        }                        
+        
+        //Re-open it for the final read
+        pipe_fp = popen(command,"r");
+        
 
-    
-    //printf("Sending:\n%s\n",fresult );
 
-    //printf("Sending  \"%s\" via UDP!\n", fresult);
-    if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
-     {
-        perror("sendto");
-        exit(1);
+        if((!(strlen(command)>2))||(strlen(command)>100))
+            strcpy(result,"Error");
+        else
+        {
+            ////////////////////////// EXECUTE & SEND ////////////////////////////////
+            while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+            {
+                if((strlen(temp)+strlen(result))>505) //then split it into multiple UDP packets
+                {
+                    strcpy(fresult,num);//First line : INFO
+                    strcat(fresult,"\n");
+                    strcat(fresult,result);//The rest lines are results
+                    //printf("Sending:%s\n",fresult );
+                    if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+                    {
+                        perror("sendto");
+                        exit(1);
+                    }
+                    bzero(result,sizeof(result));
+                }
+                strcat(result, temp);
+            }
+            ////////////////////////////////////////////////////////////////////////////
+        }
+        pclose(pipe_fp);
+        
+        strcpy(fresult, num);
+        strcat(fresult,"\n");
+        strcat(fresult, result);  
+
+        
+        //printf("Sending:\n%s\n",fresult );
+
+        //printf("Sending  \"%s\" via UDP!\n", fresult);
+        if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
+         {
+            perror("sendto");
+            exit(1);
+        }
+
+
     }
+
     close(sock);
     /*
     if ((pipe_fp = popen(command ,"r")) == NULL )

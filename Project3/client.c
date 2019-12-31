@@ -137,9 +137,32 @@ int main ( int argc , char *argv[])
 				/* Try to discover client ’s name */
 				clientname = name_from_address(client.sin_addr) ;
 				printf( "Received from %s : %s \n" , clientname , buf ) ;
+				char *ptr = strtok(buf, "\n");
+				int filenum = atoi(ptr);
+				char filename[128];
+				sprintf(filename,"output.%s.%d",argv[3],filenum);
+				ptr = strtok(NULL,"\n");
+
+				FILE *fileptr=fopen(filename,"a");
+				if(fileptr == NULL)
+			    {
+			        /* File not created hence exit */
+			        printf("Unable to create file.\n");
+			        exit(EXIT_FAILURE);
+			    }
+
+			    if(strcmp(ptr, "ERROR")==0)
+					//write empty file
+				else
+			    	fputs(ptr, fileptr);
+			    fclose(fileptr);
+
+				//printf("\nFinal output file name: %s\n",filename);
+				//if(strcmp(ptr, "ERROR")==0)
+					//write empty file
 			}
 		}
-		wait();
+		//wait();
  		return 0;
 	}
 
@@ -184,21 +207,6 @@ int main ( int argc , char *argv[])
 	if (line)
        	free(line);
 
-	//break;
-	
-	
-
-	/*
-	// Step 3: send directory name + newline 
-	if ( write_all(sock , argv[2] , strlen(argv[2])) == -1)
-		perror_exit("write") ;
-	if ( write_all( sock , "\n", 1) == -1 )
-		perror_exit ("write");
-	// Step 4: read back results and send them to stdout 
-	while(( n_read = read( sock , buffer , BUFFSIZE ) ) > 0 )
-		if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
-			perror_exit("fwrite");
-	*/
 
 	close(sock);
 	return 0;
