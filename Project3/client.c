@@ -136,7 +136,7 @@ int main ( int argc , char *argv[])
 				buf[ sizeof( buf ) -1]= '\0'; /* force str t e r m i n a t i o n */
 				/* Try to discover client ’s name */
 				clientname = name_from_address(client.sin_addr) ;
-				printf( "Received from %s : %s \n" , clientname , buf ) ;
+				//printf( "Received from %s : %s \n" , clientname , buf ) ;
 			}
 		}
 		wait();

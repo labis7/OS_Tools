@@ -215,7 +215,7 @@ int main(int argc , char *argv[])
                     //sleep(1) fix this
                     char *ptr = strtok(buffer,"\n");
                     while(ptr != NULL){ //Break down possible 2-3 line commands
-                        //printf("Sending to Pipe the command:%s\n", ptr);
+                        printf("Sending to Pipe the command:%s\n", ptr);
                         strcpy(comm, ptr );
                         if (write(fd[1] , comm, MSGSIZE) == -1)
                         {    perror("Error in Writing"); 
@@ -328,21 +328,24 @@ void run_commands(int read_fd)
     char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
     
     
-    if(strstr(ptr1," | ")){    
+    if(strstr(ptr1,"|")){    //Warning! NOT SAFE
         //Commands Without pipeline
-        char *ptr2 = strtok(ptr1, "|");
+        char *ptr2 = strtok(ptr1, "|"); //Warning! NOT SAFE
         while(ptr2 != NULL)
         {
             //printf("Checking %s\n",ptr2 );
             //if the command is in the list of the 5 AND if its able to run 
             if((strstr(ptr2, "ls") != NULL)||(strstr(ptr2, "cat") != NULL)||(strstr(ptr2, "cut") != NULL)||(strstr(ptr2, "grep") != NULL)||(strstr(ptr2, "tr") != NULL))
             {
-                pipe_fp = popen(ptr2,"r");             
+                pipe_fp = popen(ptr2,"r");    
+                while (fgets(temp, sizeof(temp), pipe_fp) != NULL)//IF the command is wrong, that part will be skipped
+                    ;         
                 if(pclose(pipe_fp)>0) //means error 
                 {
                    if(strlen(command)>2)     //but there are some commands before that.
                    {
                         command[strlen(command)-2]='\0'; //remove the extra pipe and run
+                        pipe_fp = popen(ptr2,"r"); 
                         break; 
                    }
                    else
@@ -359,6 +362,7 @@ void run_commands(int read_fd)
                 if(strlen(command)>2)
                 { ///This the only case where the command after pipe is wrong
                     command[strlen(command)-2]='\0';//delete the "|" that was put before
+                    pipe_fp = popen(ptr2,"r"); 
                 }
                 else
                     break;
@@ -393,7 +397,7 @@ void run_commands(int read_fd)
 
 
     if((!(strlen(command)>2))||(strlen(command)>100))
-        strcpy(fresult,"Error");
+        strcpy(result,"Error");
     else
     {
         ////////////////////////// EXECUTE & SEND ////////////////////////////////
@@ -404,7 +408,7 @@ void run_commands(int read_fd)
                 strcpy(fresult,num);//First line : INFO
                 strcat(fresult,"\n");
                 strcat(fresult,result);//The rest lines are results
-                printf("Sending:%s\n",fresult );
+                //printf("Sending:%s\n",fresult );
                 if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
                 {
                     perror("sendto");
@@ -415,15 +419,15 @@ void run_commands(int read_fd)
             strcat(result, temp);
         }
         ////////////////////////////////////////////////////////////////////////////
-        strcpy(fresult, num);
-        strcat(fresult,"\n");
-        strcat(fresult, result);
     }
+    pclose(pipe_fp);
     
-      
+    strcpy(fresult, num);
+    strcat(fresult,"\n");
+    strcat(fresult, result);  
 
     
-    printf("Sending:%s\n",fresult );
+    //printf("Sending:\n%s\n",fresult );
 
     //printf("Sending  \"%s\" via UDP!\n", fresult);
     if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
