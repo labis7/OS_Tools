@@ -156,16 +156,6 @@ int main(int argc , char *argv[])
              
             //inform user of socket number - used in send and receive commands  
             printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(myaddr.sin_addr) , ntohs(myaddr.sin_port));   
-           
-            
-            //send new connection greeting message  
-            //if( send(new_socket, message, strlen(message), 0) != strlen(message) )   
-            //{   
-            //    perror("send");   
-            //}   
-                 
-            //puts("Welcome message sent successfully");   
-            
 
             //add new socket to array of sockets  
             for (i = 0; i < max_clients; i++)   
@@ -201,7 +191,7 @@ int main(int argc , char *argv[])
                     csocket[i] = 0;   
                 }   
                      
-                //Echo back the message that came in  
+                //Else .we have incoming data 
                 else 
                 {   
 

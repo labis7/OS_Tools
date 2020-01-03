@@ -109,7 +109,7 @@ int main ( int argc , char *argv[])
 		server.sin_family = AF_INET ;
 		/* Internet domain */
 		server.sin_addr.s_addr = htonl( INADDR_ANY ) ;
-		server.sin_port = htons(8889) ;
+		server.sin_port = htons(R_PORT) ;
 		/* A u t o s e l e c t a port */
 		serverlen = sizeof( server ) ;
 		if ( bind( UPD_sock , serverptr , serverlen ) < 0)
@@ -144,9 +144,9 @@ int main ( int argc , char *argv[])
 				char filename[128];
 				sprintf(filename,"output.%s.%d",argv[3],filenum);
 				ptr = strtok(NULL,"\n");
-				char *position=strstr(buffer,"\n");
+				char *position=strstr(buffer,"\n"); 
 				int pos = position - buffer;
-				printf("Buffer:%s\n", buffer+pos+1);//+1 is the new line('\n')
+				//printf("Buffer:%s\n", buffer+pos+1);//+1 is the new line('\n')
 				FILE *fileptr=fopen(filename,"a");
 				if(fileptr == NULL)
 			    {
@@ -209,12 +209,15 @@ int main ( int argc , char *argv[])
         exit(EXIT_FAILURE);
 
     int i = 0;
+    int counter=0;
+
 	while ((read = getline(&line, &len, fp)) != -1) 
     {
     	i++;
+    	counter++;
         //printf("Retrieved line of length %zu:\n", read);
         //printf("Sending command \"%s\" via TCP . . .\n", line);
-        sleep(0.1);   ///////////////////////////////////////////IMPORTANT #TODO:Find the reason//
+        sleep(0.2);   ///////////////////////////////////////////IMPORTANT #TODO:Find the reason//
         char temp[105]={0x0};
         //strcpy(temp)
         snprintf(temp,105,"%d %d;%s",i,R_PORT,line);
@@ -223,6 +226,11 @@ int main ( int argc , char *argv[])
         //printf("Sending %s, size:%d\n",line ,strlen(line) );
         write_all(sock, line , strlen(line));
         //printf("%s", line);
+        if(counter == 10 )
+        {
+        	counter = 0;
+        	sleep(5);
+        }
     }
 
     sleep(0.1);//Wait before closing
