@@ -16,11 +16,41 @@
 #define FALSE  0  
  
 void run_commands(int read_fd);
+int finish = 0;
+void signalHandler(int signal)
+{
+    printf("Cought signal %d!\n",signal);
+    if (signal==SIGCHLD) 
+    {
+        printf("Child ended\n");
+        signal(SIGCHLD,signalHandler); 
+        //wait(NULL);
+    }
+    if(signal == SIGSTOP)
+    {
+        printf("Closing TCP/UDP sockets and file descriptors . . .\n");
+        //
+        signal(SIGSTOP,signalHandler);
+        finish =1 ;
+    }
+    if(signal == SIGPIPE){
+        printf("SIGPIPE signal Ignored\n");
+        signal(SIGPIPE,signalHandler);
+    }
+}
+
+
      
 int main(int argc , char *argv[])   
 {   
-    //char command[MSGSIZE];
+    finish = 0 ;
+    //Setting up actions in case of signal.
+    signal(SIGCHLD,signalHandler); 
+    signal(SIGSTOP,signalHandler);
+    signal(SIGPIPE,signalHandler);
     
+
+
     if ( argc != 3 ) 
     {
         puts("Usage: rls <Port> <Number Of Children>");
@@ -33,13 +63,14 @@ int main(int argc , char *argv[])
     
     int fd[2];
     pipe(fd);
-    
+    pid_t pid_list[1000];
 
     int pid;
     for(int i =0; i < ch_num; i++)
     {
         pid = fork();
-        if(pid == 0)
+        pid_list[i]=pid; //add child to the pid list
+        if(pid == 0)//we let only parent in this loop
             break;
     }    
     if(pid == 0)
@@ -136,8 +167,47 @@ int main(int argc , char *argv[])
                 max_sd = sd;   
         }   
       
-         
+        if (finish == 1)
+        {
+            for(int i =0; i < ch_num; i++)
+            {
+                //the SIGTERM signal, which will terminate a process, and free its allocated resources
+                kill(pid_list[i],SIGTERM);             
+            }
+            //Parent free up//
+            close(fd[1]); //close 'write side' of the pipe
+            for (i = 0; i < max_clients; i++)      
+                close(csocket[i]); //close all connected client sockets
+            close(lsocket); //closing listening socket
+            ////////////////// printf("Waiting Children. . .\n"); int status;
+            pid_t wpid;
+            while ((wpid = wait(&status)) > 0);// waits for all children
+            printf("Terminating");
+        }
+
         activity = select( max_sd + 1 , &read_fd_set , NULL , NULL , NULL);  //Waiting...no timeout 
+        if (finish == 1)
+        {
+            for(int i =0; i < ch_num; i++)
+            {            close(fd[1]); //close 'write side' of the pipe
+            for (i = 0; i < max_clients; i++)      
+                close(csocket[i]); //close all connected client sockets
+            close(lsocket); //closing listening socket
+                //the SIGTERM signal, which will terminate a process, and free its allocated resources
+                kill(pid_list[i],SIGTERM);             
+            }
+            //Parent free up//
+            close(fd[1]); //close 'write side' of the pipe
+            for (i = 0; i < max_clients; i++)      
+                close(csocket[i]); //close all connected client sockets
+            close(lsocket); //closing listening socket
+            ////////////////// printf("Waiting Children. . .\n"); int status;
+            pid_t wpid;
+            while ((wpid = wait(&status)) > 0);// waits for all children
+            printf("Terminating");
+        }
+
+
         //printf("NEW ACTIVITY DETECTED\n");
         if ((activity < 0) && (errno!=EINTR))   
         {   
