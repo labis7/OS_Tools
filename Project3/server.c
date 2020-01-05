@@ -1,11 +1,13 @@
 #include <stdio.h>  
 #include <string.h>   //strlen  
 #include <stdlib.h>  
+#include <signal.h>
 #include <fcntl.h>
 #include <errno.h>  
 #include <unistd.h>   //close  
 #include <arpa/inet.h>    //close  
 #include <sys/types.h>  
+#include <sys/wait.h>
 #include <sys/socket.h>  
 #include <netinet/in.h>  
 #include <netdb.h>
@@ -17,25 +19,26 @@
  
 void run_commands(int read_fd);
 int finish = 0;
+
 void signalHandler(int signal)
 {
     printf("Cought signal %d!\n",signal);
-    if (signal==SIGCHLD) 
+    if (signal == SIGUSR1) 
     {
         printf("Child ended\n");
-        signal(SIGCHLD,signalHandler); 
+        //sigaction(SIGCHLD,&new_action, NULL);
         //wait(NULL);
     }
-    if(signal == SIGSTOP)
+    if(signal == SIGUSR2)
     {
         printf("Closing TCP/UDP sockets and file descriptors . . .\n");
         //
-        signal(SIGSTOP,signalHandler);
+        //sigaction(SIGSTOP,&new_action, NULL);
         finish =1 ;
     }
     if(signal == SIGPIPE){
         printf("SIGPIPE signal Ignored\n");
-        signal(SIGPIPE,signalHandler);
+        //sigaction(SIGPIPE,&new_action, NULL);
     }
 }
 
@@ -45,9 +48,17 @@ int main(int argc , char *argv[])
 {   
     finish = 0 ;
     //Setting up actions in case of signal.
-    signal(SIGCHLD,signalHandler); 
-    signal(SIGSTOP,signalHandler);
-    signal(SIGPIPE,signalHandler);
+
+    struct sigaction new_action;
+
+    /* Set up the structure to specify the new action. */
+    new_action.sa_handler = signalHandler;
+    //sigemptyset (&new_action.sa_mask);
+    new_action.sa_flags = 0;
+
+    sigaction(SIGUSR1,&new_action, NULL); 
+    sigaction(SIGUSR2,&new_action, NULL);
+    sigaction(SIGPIPE,&new_action, NULL);
     
 
 
@@ -109,7 +120,6 @@ int main(int argc , char *argv[])
     }   
      
     //set master socket to allow multiple connections ,  
-    //this is just a good habit, it will work without this  
     if( setsockopt(lsocket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )   
     {   
         perror("setsockopt");   
@@ -120,8 +130,7 @@ int main(int argc , char *argv[])
     myaddr.sin_family = AF_INET;   
     myaddr.sin_addr.s_addr = INADDR_ANY;   
     myaddr.sin_port = htons( PORT); // Requested port   
-    
-    //printf("EKEI PROBLEMA\n");   
+      
     //bind the socket to localhost port  
     if (bind(lsocket, (struct sockaddr *)&myaddr, sizeof(myaddr))<0)   
     {   
@@ -172,7 +181,8 @@ int main(int argc , char *argv[])
             for(int i =0; i < ch_num; i++)
             {
                 //the SIGTERM signal, which will terminate a process, and free its allocated resources
-                kill(pid_list[i],SIGTERM);             
+                kill(pid_list[i],SIGTERM);  
+                printf("Child with PID:%d ended!\n", pid_list[i]);            
             }
             //Parent free up//
             close(fd[1]); //close 'write side' of the pipe
@@ -181,20 +191,21 @@ int main(int argc , char *argv[])
             close(lsocket); //closing listening socket
             ////////////////// printf("Waiting Children. . .\n"); int status;
             pid_t wpid;
+            int status;
             while ((wpid = wait(&status)) > 0);// waits for all children
-            printf("Terminating");
+            printf("Terminating\n");
+            exit(0);
         }
 
         activity = select( max_sd + 1 , &read_fd_set , NULL , NULL , NULL);  //Waiting...no timeout 
+       
         if (finish == 1)
         {
             for(int i =0; i < ch_num; i++)
-            {            close(fd[1]); //close 'write side' of the pipe
-            for (i = 0; i < max_clients; i++)      
-                close(csocket[i]); //close all connected client sockets
-            close(lsocket); //closing listening socket
+            {
                 //the SIGTERM signal, which will terminate a process, and free its allocated resources
-                kill(pid_list[i],SIGTERM);             
+                kill(pid_list[i],SIGTERM); 
+                printf("Child with PID:%d ended!\n", pid_list[i]);            
             }
             //Parent free up//
             close(fd[1]); //close 'write side' of the pipe
@@ -203,8 +214,10 @@ int main(int argc , char *argv[])
             close(lsocket); //closing listening socket
             ////////////////// printf("Waiting Children. . .\n"); int status;
             pid_t wpid;
+            int status;
             while ((wpid = wait(&status)) > 0);// waits for all children
-            printf("Terminating");
+            printf("Terminating\n");
+            exit(0);
         }
 
 
@@ -388,6 +401,29 @@ void run_commands(int read_fd)
         //Choose only the first Command(including Pipes)
         char *ptr1 = strtok(ptr,";"); //Not safe way to do it !!! WARNING !!!
         
+        if(strcmp(ptr1,"end\0") == 0) //Case that child need to be terminated(after closing its resources)
+        {
+            //send signal to parent
+            kill(getppid(),SIGUSR1);
+            printf("Child with PID %d ended\n",getpid());
+            fflush(stdout);
+            // Free //
+
+            close(sock);
+            pclose(pipe_fp);
+            exit(0);
+            //////////
+        }
+        if(strcmp(ptr1,"timeToStop\0") == 0)
+        {
+            kill(getppid(), SIGUSR2);
+            sleep(0.5);
+            close(sock);
+            pclose(pipe_fp);
+            exit(0);//just in case
+        }
+
+
         char tempcomm[MSGSIZE]={0x0};
         if(strstr(ptr1,"|")){    //Warning! NOT SAFE
             //Commands Without pipeline

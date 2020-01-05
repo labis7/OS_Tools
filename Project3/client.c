@@ -158,7 +158,7 @@ int main ( int argc , char *argv[])
 			    if(strcmp(ptr, "Error\0")==0)
 			    {
 					//write empty file
-					fprintf( fileptr, "\0");
+					//fprintf( fileptr, "\0");
 			    }
 
 				else
