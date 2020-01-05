@@ -68,28 +68,6 @@ int main ( int argc , char *argv[])
 	/* set socket type */
 	if ( connect( sock , ( struct sockaddr *)&servadd , sizeof(servadd) ) !=0)
 	perror_exit("connect");
-	
-	//n_read = read( sock , buffer , BUFFSIZE );
-	//if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
-	//	perror_exit("fwrite");
-
-
-
-	/*
-	while(1)
-	{
-
-
-		
-		sleep(2);
-		if(write_all(sock, "labiz", 5) == -1)
-			perror_exit("write");
-		n_read = read( sock , buffer , BUFFSIZE );
-		if ( write_all(STDOUT_FILENO , buffer , n_read ) < n_read )
-			perror_exit("fwrite");
-	}
-		*/
-
 
 //////////////////////////// Setup & Accept UDP ////////////////////////////////////////
     
@@ -196,12 +174,10 @@ int main ( int argc , char *argv[])
     {
     	i++;
     	counter++;
-        //printf("Retrieved line of length %zu:\n", read);
-        //printf("Sending command \"%s\" via TCP . . .\n", line);
-        sleep(0.2);   ///////////////////////////////////////////IMPORTANT #TODO:Find the reason//
+        sleep(0.2); 
         char temp[105]={0x0};
         //strcpy(temp)
-        snprintf(temp,105,"%d %d;%s",i,R_PORT,line);
+        snprintf(temp,105,"%d %d;%s",i,R_PORT,line); // concat
         bzero(line,sizeof(line));
         snprintf(line,strlen(temp),"%s",temp);
         //printf("Sending %s, size:%d\n",line ,strlen(line) );
