@@ -161,27 +161,8 @@ int main ( int argc , char *argv[])
 					//fprintf( fileptr, "\0");
 			    }
 
-				else
-				{	
+				else	
 					fprintf(fileptr, buffer+pos+1);
-					/*
-					int init=0;
-					while(ptr!=NULL)
-					{
-						
-						if(init == 0)
-						{
-							init=1;
-							fprintf(fileptr, ptr);
-							ptr = strtok(NULL,"\n");
-							continue;
-						}
-						fprintf(fileptr, "\n");
-			    		fprintf(fileptr, ptr);
-			    		ptr = strtok(NULL,"\n");
-					}
-					*/
-			    }
 			    fclose(fileptr);
 			}
 		}
