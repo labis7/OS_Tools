@@ -1,6 +1,6 @@
 all:
-	gcc -o server server.c -Wall
-	gcc -o client client.c -Wall	
+	gcc -o remoteServer remoteServer.c -Wall
+	gcc -o remoteClient remoteClient.c -Wall	
 clean:
 	rm server
 	rm client
