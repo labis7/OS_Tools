@@ -1,10 +1,11 @@
 #include <stdio.h>  
-#include <string.h>   //strlen  
+#include <string.h>   
+#include <signal.h> 
 #include <stdlib.h>  
 #include <fcntl.h>
 #include <errno.h>  
-#include <unistd.h>   //close  
-#include <arpa/inet.h>    //close  
+#include <unistd.h>   
+#include <arpa/inet.h>    
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>  
@@ -40,8 +41,17 @@ int write_all(int fd , void *buff , size_t size )
 	return sent ;
 }
 
+void  ALARMhandler(int sig)
+{
+  
+  exit(0);
+}
+
+
 int main ( int argc , char *argv[]) 
 {
+	signal(SIGALRM, ALARMhandler);     //init the handler   
+
 	struct sockaddr_in servadd ; // The address of server
 	struct hostent *hp ; // to resolve server ip
 	int sock; // socket and message length
@@ -75,7 +85,7 @@ int main ( int argc , char *argv[])
 	if(fork()!=0)
 	{
 		int n , UPD_sock ; unsigned int serverlen , clientlen ;
-		char buf[512] , *clientname ;
+		char buf[512] ;
 		struct sockaddr_in server , client ;
 		struct sockaddr *serverptr = ( struct sockaddr *)&server ;
 		struct sockaddr *clientptr = ( struct sockaddr *)&client ;
@@ -111,20 +121,18 @@ int main ( int argc , char *argv[])
 			}
 			else
 			{
-				buf[ sizeof( buf ) -1]= '\0'; /* force str t e r m i n a t i o n */
-				/* Try to discover client ’s name */
-				clientname = name_from_address(client.sin_addr) ;
-				//printf( "Received from %s : %s \n" , clientname , buf ) ;
+				//
+				buf[ sizeof( buf ) -1]= '\0'; 
 				char buffer[512];
-				strcpy(buffer,buf);
+				strcpy(buffer,buf); //copy,because we will use strtok and buf must be intact
 				char *ptr = strtok(buf, "\n");
 				int filenum = atoi(ptr);
 				char filename[128];
 				sprintf(filename,"output.%s.%d",argv[3],filenum);
 				ptr = strtok(NULL,"\n");
-				char *position=strstr(buffer,"\n"); 
-				int pos = position - buffer;
-				//printf("Buffer:%s\n", buffer+pos+1);//+1 is the new line('\n')
+				//find the offset and seek in order to get the data result
+				char *position=strstr(buffer,"\n"); // the '\n' is the key where we will split the file info from actual data
+				int pos = position - buffer; // memory_pos_we_want_to_seek - starting_mem_of_the_string
 				FILE *fileptr=fopen(filename,"a");
 				if(fileptr == NULL)
 			    {
@@ -136,15 +144,15 @@ int main ( int argc , char *argv[])
 			    if(strcmp(ptr, "Error\0")==0)
 			    {
 					//write empty file
-					//fprintf( fileptr, "\0");
 			    }
-
 				else	
-					fprintf(fileptr, buffer+pos+1);
+					fputs(buffer+pos+1, fileptr); //add the offset we found before +1 to ignore '\n'
+
 			    fclose(fileptr);
+			    alarm(7);
 			}
 		}
-		//wait();
+		
  		return 0;
 	}
 
@@ -175,14 +183,12 @@ int main ( int argc , char *argv[])
     	i++;
     	counter++;
         sleep(0.2); 
-        char temp[105]={0x0};
-        //strcpy(temp)
+        char temp[105]={0x0}; //init
         snprintf(temp,105,"%d %d;%s",i,R_PORT,line); // concat
-        bzero(line,sizeof(line));
         snprintf(line,strlen(temp),"%s",temp);
         //printf("Sending %s, size:%d\n",line ,strlen(line) );
         write_all(sock, line , strlen(line));
-        //printf("%s", line);
+
         if(counter == 10 )
         {
         	counter = 0;
@@ -190,7 +196,7 @@ int main ( int argc , char *argv[])
         }
     }
 
-    sleep(0.1);//Wait before closing
+    //free
 	fclose(fp);
 	if (line)
        	free(line);

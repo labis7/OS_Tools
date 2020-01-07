@@ -103,8 +103,7 @@ int main(int argc , char *argv[])
     //set of socket descriptors  
     fd_set read_fd_set;   
          
-    //a message  
-    //char *message = "ECHO Daemon v1.0 \r\n";   
+  
      
     //initialise all csocket[] to 0 so not checked  
     for (i = 0; i < max_clients; i++)   
@@ -139,8 +138,8 @@ int main(int argc , char *argv[])
     }   
     printf("Listener on port %d \n", PORT);   
          
-    //try to specify maximum of 3 pending connections for the master socket  
-    if (listen(lsocket, 3) < 0)   
+
+    if (listen(lsocket, 10) < 0)   
     {   
         perror("listen");   
         exit(EXIT_FAILURE);   
@@ -155,8 +154,6 @@ int main(int argc , char *argv[])
     {   
         //clear the socket set  
         FD_ZERO(&read_fd_set);   
-
-
         //add master socket to set  
         FD_SET(lsocket, &read_fd_set);   
         max_sd = lsocket;  //max socket descriptor 
@@ -521,9 +518,6 @@ void run_commands(int read_fd)
         strcpy(fresult, num);
         strcat(fresult,"\n");
         strcat(fresult, result);  
-
-        
-        //printf("Sending:%s\n",fresult );
 
         //printf("Sending  \"%s\" via UDP!\n", fresult);
         if ( sendto( sock , fresult , strlen(fresult)+1 , 0 , serverptr , serverlen ) < 0)
