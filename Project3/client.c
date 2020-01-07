@@ -43,7 +43,7 @@ int write_all(int fd , void *buff , size_t size )
 
 void  ALARMhandler(int sig)
 {
-  
+  sleep(0.1);
   exit(0);
 }
 
@@ -63,6 +63,13 @@ int main ( int argc , char *argv[])
 	}
 	int S_PORT = atoi(argv[2]); 
 	int R_PORT = atoi(argv[3]);
+
+	//REMOVE PREVIOUS OUTPUTS (if exist)
+	char filerm[32];
+	sprintf(filerm,"rm output.%s.* 2>>/dev/null",argv[3]); //cleanup silently
+	system(filerm);
+	////////////////////////////////////
+
 	/* Step 1: Get a socket */
 	if (( sock = socket( AF_INET , SOCK_STREAM , 0) ) == -1 )
 	perror_exit("socket") ;
@@ -200,7 +207,6 @@ int main ( int argc , char *argv[])
 	fclose(fp);
 	if (line)
        	free(line);
-
 
 	close(sock);
 	return 0;
