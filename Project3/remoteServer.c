@@ -96,7 +96,7 @@ int main(int argc , char *argv[])
     int opt = TRUE;   
     int lsocket , addrlen , new_socket , csocket[30] , max_clients = 30 , activity, i , valread , sd;   
     int max_sd;   
-    struct sockaddr_in myaddr;   
+    struct sockaddr_in myaddr,clientaddr;   
         
     char buffer[MSGSIZE], comm[MSGSIZE];  //data buffer of 1K  
 
@@ -146,7 +146,7 @@ int main(int argc , char *argv[])
     }   
          
     //accept the incoming connection  
-    addrlen = sizeof(myaddr);   
+    addrlen = sizeof(clientaddr);   
     puts("Waiting for connections ...");   
     //FILE *pipe_fp;
 
@@ -228,14 +228,14 @@ int main(int argc , char *argv[])
         //then its an incoming connection  
         if (FD_ISSET(lsocket, &read_fd_set)) //check only listening socket  
         {   
-            if ((new_socket = accept(lsocket, (struct sockaddr *)&myaddr, (socklen_t*)&addrlen))<0)   
+            if ((new_socket = accept(lsocket, (struct sockaddr *)&clientaddr, (socklen_t*)&addrlen))<0)   
             {   
                 perror("accept");   
                 exit(EXIT_FAILURE);   
             }   
              
             //inform user of socket number - used in send and receive commands  
-            printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(myaddr.sin_addr) , ntohs(myaddr.sin_port));   
+            printf("New connection , socket fd is %d , ip is : %s , port : %d\n" , new_socket , inet_ntoa(clientaddr.sin_addr) , ntohs(clientaddr.sin_port));   
 
             //add new socket to array of sockets  
             for (i = 0; i < max_clients; i++)   
@@ -263,8 +263,8 @@ int main(int argc , char *argv[])
                 if ((valread = read( sd , buffer, 512)) == 0)   
                 {   
                     //Somebody disconnected , get his details and print  
-                    getpeername(sd , (struct sockaddr*)&myaddr ,(socklen_t*)&addrlen);   
-                    printf("Host disconnected , ip %s , port %d \n" ,inet_ntoa(myaddr.sin_addr) , ntohs(myaddr.sin_port));   
+                    getpeername(sd , (struct sockaddr*)&clientaddr ,(socklen_t*)&addrlen);   
+                    printf("Host disconnected , ip %s , port %d \n" ,inet_ntoa(clientaddr.sin_addr) , ntohs(clientaddr.sin_port));   
                          
                     //Close the socket and mark as 0 in list for reuse  
                     close( sd );   
